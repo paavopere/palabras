@@ -35,10 +35,10 @@ def test_get_wiktionary_page_contains_portuguese_conjugation():
     assert expected_contains in result
 
 
-def test_get_wiktionary_spanish_section():
+def test_get_wiktionary_spanish_section_return_type():
     word = 'culpar'
     result = palabras.core.get_wiktionary_spanish_section(word)
-    assert isinstance(result, str)
+    assert isinstance(result, palabras.core.WiktionaryPageSection)
 
 
 def test_no_spanish_definition():

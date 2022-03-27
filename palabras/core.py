@@ -1,3 +1,4 @@
+from copy import copy
 from dataclasses import dataclass, field
 from typing import List
 import requests
@@ -18,6 +19,14 @@ class WiktionarySectionNotFound(LookupError):
     pass
 
 
+class WiktionaryPageSection:
+    def __init__(self, soup: BeautifulSoup):
+        self.soup = soup
+
+    def __contains__(self, other: str) -> bool:
+        return other in str(self.soup)
+
+
 @dataclass
 class WordInfo:
     word: str
@@ -29,7 +38,8 @@ def lookup(word: str) -> WordInfo:
 
 
 def get_wiktionary_spanish_section(word: str) -> WiktionaryPageSection:
-    return extract_spanish_section(get_wiktionary_page(word))
+    page = get_wiktionary_page(word)
+    return extract_spanish_section(page)
 
 
 def get_wiktionary_page(word: str) -> WiktionaryPage:
@@ -40,22 +50,37 @@ def get_wiktionary_page(word: str) -> WiktionaryPage:
 
 
 def extract_spanish_section(page: WiktionaryPage) -> WiktionaryPageSection:
-    soup = BeautifulSoup(page, features='html.parser')
-    section_id_element = soup.find(id='Spanish')
-    if section_id_element is None:
+    page_soup = BeautifulSoup(page, features='html.parser')
+
+    section_soup = BeautifulSoup()
+    for element in _spanish_section_tags(page_soup):
+        section_soup.append(copy(element))
+
+    return WiktionaryPageSection(soup=section_soup)
+
+
+def _spanish_section_tags(page_soup: BeautifulSoup) -> List[PageElement]:
+    """ Get a list of all BeautifulSoup tags in the logical "Spanish" section.
+    TODO clarify whether these are guaranteed to be **Tag**s or if they're more general **PageElement**s
+    """
+    start_tag = _get_spanish_section_start_tag(page_soup)
+    return _get_next_siblings_until_h1_or_h2(start_tag)
+
+
+def _get_spanish_section_start_tag(page_soup: BeautifulSoup) -> bs4.Tag:
+    section_id_tag: bs4.Tag = page_soup.find(id='Spanish')
+    if section_id_tag is None:
         raise WiktionarySectionNotFound()
-    start_element = section_id_element.parent
-    assert start_element.name == 'h2'
-    elements = _get_siblings_until_h1_or_h2(start_element)
-    return '\n'.join(map(str, elements))
+    start_tag = section_id_tag.parent
+    assert start_tag.name == 'h2'
+    return start_tag
     
 
-def _get_siblings_until_h1_or_h2(element: PageElement) -> List[PageElement]:
+def _get_next_siblings_until_h1_or_h2(element: PageElement) -> List[PageElement]:
     section_tags = [element]
     for sibling in element.next_siblings:
         if sibling.name in ('h1', 'h2'):
             break
         else:
             section_tags.append(sibling)
-    
     return section_tags
