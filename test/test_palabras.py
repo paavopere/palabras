@@ -63,8 +63,18 @@ def test_definition_list_item_to_str():
     assert str_definition == 'parse this'
 
 
-
 def test_lookup_definition():
     word = 'culpar'
     word_info = palabras.core.lookup(word)
     assert word_info.definitions[0] == 'to blame'
+
+
+def test_lookup_definition_complicated():
+    word = 'empleado'  # this word has definitions for adjective, noun, and verb
+    revision = 62175311  # specific version ID
+    word_info = palabras.core.lookup(word, revision=revision)
+    assert word_info.definitions == [
+        'employed',
+        'employee',
+        'Masculine singular past participle of emplear.'
+    ]
