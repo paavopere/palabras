@@ -1,4 +1,5 @@
 
+from bs4 import BeautifulSoup
 import pytest
 import palabras.core
 
@@ -54,8 +55,16 @@ def test_get_wiktionary_spanish_section_does_not_contain_portuguese():
     assert portuguese_conjugation not in section
 
 
-@pytest.mark.xfail
+def test_definition_list_item_to_str():
+    li = BeautifulSoup('''
+    <li>parse <a href="foo">this</a><dl><dd><span>Whatever</span>...</dd></dl></li>
+    ''').li
+    str_definition = palabras.core.WiktionaryPageSection.definition_list_item_to_str(li)
+    assert str_definition == 'parse this'
+
+
+
 def test_lookup_definition():
     word = 'culpar'
     word_info = palabras.core.lookup(word)
-    assert word_info.definition[0] == 'to blame'
+    assert word_info.definitions[0] == 'to blame'

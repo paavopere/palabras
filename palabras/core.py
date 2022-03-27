@@ -26,15 +26,59 @@ class WiktionaryPageSection:
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
 
+    def definitions(self) -> List[str]:
+        definitions_ = []
+        for definition_list_item in self._definition_list_items():
+            definitions_.append(self.definition_list_item_to_str(definition_list_item))
+        return definitions_
+
+    def _definition_list_items(self):
+        headwords = self.soup.find_all(class_='headword')
+
+        # a bunch of `ol`s that contain a number of definition list items
+        definition_lists = [hw.parent.find_next_sibling('ol') for hw in headwords]
+
+        # a bunch of `li`s that contain one definition "line"
+        definition_list_items = []
+        for dl in definition_lists:
+            for dli in dl.find_all('li'):
+                definition_list_items.append(dli)
+
+        return definition_list_items
+
+    @staticmethod
+    def definition_list_item_to_str(li: bs4.Tag) -> str:
+        """
+        Parse the contents of the given definition `li` tag.
+        """
+        str_ = ''
+        for element in li.contents:
+            if element.name != 'dl':  #  exclude usage examples and synonyms that are under <dl>
+                str_ += ''.join(element.strings)
+        str_ = str_.replace('\n', '')
+        return str_
+
+    def headwords(self) -> List[bs4.Tag]:
+        return self.soup.find_all(class_='headword')
+
+    def _definition_headings(self) -> List[bs4.Tag]:
+        h3s = self.soup.find_all('h3')
+        definition_h3s = []
+        for h3 in h3s:
+            # if 
+            pass
+
+
 
 @dataclass
 class WordInfo:
     word: str
-    definition: list = field(default_factory=list)
+    definitions: list = field(default_factory=list)
 
 
 def lookup(word: str) -> WordInfo:
-    return WordInfo(word)
+    section = get_wiktionary_spanish_section(word)
+    return WordInfo(word, definitions=section.definitions())
 
 
 def get_wiktionary_spanish_section(word: str) -> WiktionaryPageSection:
