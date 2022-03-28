@@ -74,17 +74,20 @@ class WordInfo:
 
 
 def lookup(word: str, revision: Optional[int] = None) -> WordInfo:
-    section = get_wiktionary_spanish_section(word)
+    section = get_wiktionary_spanish_section(word, revision)
     return WordInfo(word, definitions=section.definitions())
 
 
-def get_wiktionary_spanish_section(word: str) -> WiktionaryPageSection:
-    page = get_wiktionary_page(word)
+def get_wiktionary_spanish_section(word: str, revision: Optional[int] = None) -> WiktionaryPageSection:
+    page = get_wiktionary_page(word, revision)
     return extract_spanish_section(page)
 
 
-def get_wiktionary_page(word: str) -> WiktionaryPage:
-    r = requests.get(f'https://en.wiktionary.org/wiki/{word}')
+def get_wiktionary_page(word: str, revision: Optional[int] = None) -> WiktionaryPage:
+    if revision is None:
+        r = requests.get(f'https://en.wiktionary.org/wiki/{word}')
+    else:
+        r = requests.get(f'https://en.wiktionary.org/w/index.php?title={word}&oldid={revision}')
     if 'Wiktionary does not yet have an entry for' in r.text:
         raise WiktionaryPageNotFound('Wiktionary page not found for {word}')
     return r.text
