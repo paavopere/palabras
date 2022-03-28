@@ -71,10 +71,29 @@ def test_lookup_definition():
 
 def test_lookup_definition_complicated():
     word = 'empleado'  # this word has definitions for adjective, noun, and verb
-    revision = 62175311  # specific version ID
+    revision = 62175311
     word_info = palabras.core.lookup(word, revision=revision)
     assert word_info.definitions == [
         'employed',
         'employee',
         'Masculine singular past participle of emplear.'
     ]
+
+
+def test_lookup_different_definitions_in_history():
+    word = 'olvidar'
+    revision_1 = 62345284
+    revision_2 = 66217360
+    expected_definitions_1 = [
+        'to forget; to elude, escape (be forgotten by)',
+        '(reflexive) to forget',
+        '(reflexive) to leave behind'
+    ]
+    expected_definitions_2 = [
+        '(transitive) to forget (be forgotten by)',
+        '(reflexive, intransitive) to forget, elude, escape',
+        '(with de, reflexive, intransitive) to forget, to leave behind'
+    ]
+
+    assert palabras.core.lookup(word, revision=revision_1).definitions == expected_definitions_1
+    assert palabras.core.lookup(word, revision=revision_2).definitions == expected_definitions_2

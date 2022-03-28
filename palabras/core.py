@@ -1,6 +1,6 @@
 from copy import copy
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 import requests
 import bs4
 from bs4 import BeautifulSoup
@@ -21,7 +21,15 @@ class WiktionarySectionNotFound(LookupError):
 
 class WiktionaryPageSection:
     def __init__(self, soup: BeautifulSoup):
-        self.soup = soup
+        self.soup = self._clean_soup(soup)
+
+    @staticmethod
+    def _clean_soup(soup: BeautifulSoup):
+        """ Return a copy of soup, some elements thrown away """
+        soup = copy(soup)
+        for e in soup.find_all(class_='wiktQuote'):
+            e.parent.decompose()
+        return soup
 
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
@@ -65,7 +73,7 @@ class WordInfo:
     definitions: list = field(default_factory=list)
 
 
-def lookup(word: str) -> WordInfo:
+def lookup(word: str, revision: Optional[int] = None) -> WordInfo:
     section = get_wiktionary_spanish_section(word)
     return WordInfo(word, definitions=section.definitions())
 
