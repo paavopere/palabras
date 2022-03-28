@@ -26,7 +26,7 @@ class WiktionaryPageSection:
     @staticmethod
     def _clean_soup(soup: BeautifulSoup):
         """ Return a copy of soup, some elements thrown away """
-        soup = copy(soup)
+        soup = copy(soup)  # TODO assert that the original soup is unchanged
         for e in soup.find_all(class_='wiktQuote'):
             e.parent.decompose()
         return soup
