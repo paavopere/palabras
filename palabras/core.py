@@ -53,21 +53,10 @@ class WiktionaryPageSection:
         """
         str_ = ''
         for element in li.contents:
-            if element.name != 'dl':  #  exclude usage examples and synonyms that are under <dl>
+            if element.name != 'dl':  #  exclude usage examples and synonyms (etc.?), which are under <dl>
                 str_ += ''.join(element.strings)
         str_ = str_.replace('\n', '')
         return str_
-
-    def headwords(self) -> List[bs4.Tag]:
-        return self.soup.find_all(class_='headword')
-
-    def _definition_headings(self) -> List[bs4.Tag]:
-        h3s = self.soup.find_all('h3')
-        definition_h3s = []
-        for h3 in h3s:
-            # if 
-            pass
-
 
 
 @dataclass
