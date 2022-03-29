@@ -4,9 +4,9 @@ import pytest
 import palabras.core
 
 
-def test_lookup_returns_str():
+def test_get_word_info_return_type():
     word = 'despacito'
-    result = palabras.core.lookup(word)
+    result = palabras.core.get_word_info(word)
     assert isinstance(result, palabras.core.WordInfo)
 
 
@@ -65,15 +65,15 @@ def test_definition_list_item_to_str():
 
 def test_lookup_definition():
     word = 'culpar'
-    word_info = palabras.core.lookup(word)
-    assert word_info.definitions[0] == 'to blame'
+    word_info = palabras.core.get_word_info(word)
+    assert word_info.definition_strings[0] == 'to blame'
 
 
 def test_lookup_definition_complicated():
     word = 'empleado'  # this word has definitions for adjective, noun, and verb
     revision = 62175311
-    word_info = palabras.core.lookup(word, revision=revision)
-    assert word_info.definitions == [
+    word_info = palabras.core.get_word_info(word, revision=revision)
+    assert word_info.definition_strings == [
         'employed',
         'employee',
         'Masculine singular past participle of emplear.'
@@ -95,5 +95,5 @@ def test_lookup_different_definitions_in_history():
         '(with de, reflexive, intransitive) to forget, to leave behind'
     ]
 
-    assert palabras.core.lookup(word, revision=revision_1).definitions == expected_definitions_1
-    assert palabras.core.lookup(word, revision=revision_2).definitions == expected_definitions_2
+    assert palabras.core.get_word_info(word, revision=revision_1).definition_strings == expected_definitions_1
+    assert palabras.core.get_word_info(word, revision=revision_2).definition_strings == expected_definitions_2

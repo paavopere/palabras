@@ -70,12 +70,12 @@ class WiktionaryPageSection:
 @dataclass
 class WordInfo:
     word: str
-    definitions: list = field(default_factory=list)
+    definition_strings: List[str] = field(default_factory=list)
 
 
-def lookup(word: str, revision: Optional[int] = None) -> WordInfo:
+def get_word_info(word: str, revision: Optional[int] = None):
     section = get_wiktionary_spanish_section(word, revision)
-    return WordInfo(word, definitions=section.definitions())
+    return WordInfo(word, definition_strings=section.definitions())
 
 
 def get_wiktionary_spanish_section(word: str, revision: Optional[int] = None) -> WiktionaryPageSection:
