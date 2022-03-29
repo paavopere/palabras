@@ -1,7 +1,9 @@
 
 from bs4 import BeautifulSoup
+from textwrap import dedent
 import pytest
 import palabras.core
+import palabras.cli
 from palabras.core import WordInfo
 
 
@@ -112,3 +114,33 @@ def test_lookup_different_definitions_in_history():
 
     assert palabras.core.get_word_info(word, revision=revision_1).definition_strings == expected_definitions_1
     assert palabras.core.get_word_info(word, revision=revision_2).definition_strings == expected_definitions_2
+
+    
+def test_cli(capsys: pytest.CaptureFixture):
+    args = ['olvidar']
+    palabras.cli.main(args)
+    captured = capsys.readouterr()
+    expected = dedent('''
+        olvidar
+        - (transitive) to forget (be forgotten by)
+        - (reflexive, intransitive) to forget, elude, escape
+        - (with de, reflexive, intransitive) to forget, to leave behind
+    ''').lstrip()
+    assert captured.out == expected
+    
+
+def test_cli2(capsys: pytest.CaptureFixture):
+    args = ['ser']
+    palabras.cli.main(args)
+    captured = capsys.readouterr()
+    expected = dedent('''
+        ser
+        - to be (essentially or identified as)
+        - to be (in the passive voice sense)
+        - to exist; to occur
+        - a being, organism
+        - nature, essence
+        - value, worth
+    ''').lstrip()
+    assert captured.out == expected
+    

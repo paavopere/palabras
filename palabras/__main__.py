@@ -1,3 +1,4 @@
+import sys
 from . import cli
 
-cli.run()
+cli.main(sys.argv[1:])
