@@ -19,6 +19,17 @@ class WiktionarySectionNotFound(LookupError):
     pass
 
 
+@dataclass
+class WordInfo:
+    word: str
+    definition_strings: List[str] = field(default_factory=list)
+
+    @classmethod
+    def from_search(cls, word: str, *, revision: Optional[int] = None):
+        section = get_wiktionary_spanish_section(word, revision)
+        return cls(word=word, definition_strings=section.definitions())
+
+
 class WiktionaryPageSection:
     def __init__(self, soup: BeautifulSoup):
         self.soup = self._clean_soup(soup)
@@ -65,12 +76,6 @@ class WiktionaryPageSection:
                 str_ += ''.join(element.strings)
         str_ = str_.replace('\n', '')
         return str_
-
-
-@dataclass
-class WordInfo:
-    word: str
-    definition_strings: List[str] = field(default_factory=list)
 
 
 def get_word_info(word: str, revision: Optional[int] = None):

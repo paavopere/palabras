@@ -2,12 +2,27 @@
 from bs4 import BeautifulSoup
 import pytest
 import palabras.core
+from palabras.core import WordInfo
 
 
 def test_get_word_info_return_type():
     word = 'despacito'
-    result = palabras.core.get_word_info(word)
-    assert isinstance(result, palabras.core.WordInfo)
+    wi = palabras.core.get_word_info(word)
+    assert isinstance(wi, palabras.core.WordInfo)
+
+
+def test_get_word_info_from_search_return_type():
+    word = 'despacito'
+    wi = WordInfo.from_search(word)
+    assert isinstance(wi, palabras.core.WordInfo)
+
+
+def test_get_word_info_equals_but_is_not_word_info_from_search():
+    word = 'despacito'
+    wi1 = palabras.core.get_word_info(word)
+    wi2 = WordInfo.from_search(word)
+    assert wi1 == wi2
+    assert wi1 is not wi2
 
 
 def test_get_wiktionary_page_returns_str():
