@@ -40,6 +40,13 @@ class WiktionaryPageSection:
         soup = copy(soup)  # TODO assert that the original soup is unchanged
         for e in soup.find_all(class_='wiktQuote'):
             e.parent.decompose()
+        
+        # remove nested lists from definition list items
+        for li in WiktionaryPageSection._definition_list_items_from_soup(soup):
+            for e in li.find_all('ul'):
+                e.decompose()
+            
+        
         return soup
 
     def __contains__(self, other: str) -> bool:
@@ -51,8 +58,13 @@ class WiktionaryPageSection:
             definitions_.append(self.definition_list_item_to_str(definition_list_item))
         return definitions_
 
+    # TODO remove
     def _definition_list_items(self):
-        headwords = self.soup.find_all(class_='headword')
+        return self._definition_list_items_from_soup(self.soup)
+    
+    @staticmethod
+    def _definition_list_items_from_soup(soup):
+        headwords = soup.find_all(class_='headword')
 
         # a bunch of `ol`s that contain a number of definition list items
         definition_lists = [hw.parent.find_next_sibling('ol') for hw in headwords]
@@ -64,7 +76,8 @@ class WiktionaryPageSection:
                 definition_list_items.append(dli)
 
         return definition_list_items
-
+    
+    
     @staticmethod
     def definition_list_item_to_str(li: bs4.Tag) -> str:
         """
@@ -100,12 +113,17 @@ def get_wiktionary_page(word: str, revision: Optional[int] = None) -> Wiktionary
 
 def extract_spanish_section(page: WiktionaryPage) -> WiktionaryPageSection:
     page_soup = BeautifulSoup(page, features='html.parser')
+    section_soup = _spanish_section_soup(page_soup)
+    return WiktionaryPageSection(soup=section_soup)
 
-    section_soup = BeautifulSoup()
+
+def _spanish_section_soup(page_soup: BeautifulSoup) -> BeautifulSoup:
+    """ Get a new BeautifulSoup object that only has the tags from the Spanish section. """
+    section_soup = BeautifulSoup(features='html.parser')
     for element in _spanish_section_tags(page_soup):
         section_soup.append(copy(element))
-
-    return WiktionaryPageSection(soup=section_soup)
+    return section_soup
+    
 
 
 def _spanish_section_tags(page_soup: BeautifulSoup) -> List[PageElement]:
