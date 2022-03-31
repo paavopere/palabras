@@ -129,7 +129,25 @@ def test_cli(capsys: pytest.CaptureFixture):
     assert captured.out == expected
     
 
-def test_cli2(capsys: pytest.CaptureFixture):
+def test_cli_revision(capsys: pytest.CaptureFixture):
+    args1 = ['olvidar', '-r', '62345284']
+    args2 = ['olvidar', '--revision', '62345284']
+    args3 = ['olvidar', '--revision=62345284']
+    
+    expected = dedent('''
+        olvidar
+        - to forget; to elude, escape (be forgotten by)
+        - (reflexive) to forget
+        - (reflexive) to leave behind
+    ''').lstrip()
+    
+    for args in args1, args2, args3:
+        palabras.cli.main(args)
+        captured = capsys.readouterr()
+        assert captured.out == expected
+    
+
+def test_cli_ser(capsys: pytest.CaptureFixture):
     args = ['ser']
     palabras.cli.main(args)
     captured = capsys.readouterr()
