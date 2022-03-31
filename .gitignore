@@ -130,3 +130,5 @@ dmypy.json
 
 # ad-hoc testing stuff
 _adhoc/
+
+.vscode/
