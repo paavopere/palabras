@@ -107,7 +107,7 @@ def get_wiktionary_page(word: str, revision: Optional[int] = None) -> Wiktionary
     else:
         r = requests.get(f'https://en.wiktionary.org/w/index.php?title={word}&oldid={revision}')
     if 'Wiktionary does not yet have an entry for' in r.text:
-        raise WiktionaryPageNotFound('Wiktionary page not found for {word}')
+        raise WiktionaryPageNotFound('No Wiktionary page found')
     return r.text
 
 
@@ -137,7 +137,7 @@ def _spanish_section_tags(page_soup: BeautifulSoup) -> List[PageElement]:
 def _get_spanish_section_start_tag(page_soup: BeautifulSoup) -> bs4.Tag:
     section_id_tag: bs4.Tag = page_soup.find(id='Spanish')
     if section_id_tag is None:
-        raise WiktionarySectionNotFound()
+        raise WiktionarySectionNotFound('No Spanish entry found from Wiktionary page')
     start_tag = section_id_tag.parent
     assert start_tag.name == 'h2'
     return start_tag

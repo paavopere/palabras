@@ -1,4 +1,4 @@
 import sys
 from . import cli
 
-cli.main(sys.argv[1:])
+sys.exit(cli.main(sys.argv[1:]))

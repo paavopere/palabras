@@ -1,6 +1,6 @@
 import argparse
 
-from .core import WordInfo
+from .core import WordInfo, WiktionaryPageNotFound, WiktionarySectionNotFound
 
 
 def main(args):
@@ -10,7 +10,12 @@ def main(args):
     parser.add_argument('-r', '--revision', type=int, metavar='<n>', help='Wiktionary revision ID (from permalink)')
     args = parser.parse_args(args)
     
-    print(parse(WordInfo.from_search(args.word, revision=args.revision)))
+    try:
+        print(parse(WordInfo.from_search(args.word, revision=args.revision)))
+        return 0
+    except (WiktionaryPageNotFound, WiktionarySectionNotFound) as exc:
+        print(exc)
+        return 1
 
 
 def parse(word_info: WordInfo) -> str:

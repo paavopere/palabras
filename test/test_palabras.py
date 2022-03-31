@@ -142,14 +142,15 @@ def test_cli_revision(capsys: pytest.CaptureFixture):
     ''').lstrip()
     
     for args in args1, args2, args3:
-        palabras.cli.main(args)
+        exitcode = palabras.cli.main(args)
         captured = capsys.readouterr()
         assert captured.out == expected
+        assert exitcode == 0
     
 
 def test_cli_ser(capsys: pytest.CaptureFixture):
     args = ['ser']
-    palabras.cli.main(args)
+    exitcode = palabras.cli.main(args)
     captured = capsys.readouterr()
     expected = dedent('''
         ser
@@ -161,4 +162,22 @@ def test_cli_ser(capsys: pytest.CaptureFixture):
         - value, worth
     ''').lstrip()
     assert captured.out == expected
+    assert exitcode == 0
     
+
+def test_cli_nonexistent_page(capsys: pytest.CaptureFixture):
+    args = ['asdasdasd']
+    exitcode = palabras.cli.main(args)
+    captured = capsys.readouterr()
+    expected = 'No Wiktionary page found\n'
+    assert captured.out == expected
+    assert exitcode == 1
+    
+
+def test_cli_non_spanish_section(capsys: pytest.CaptureFixture):
+    args = ['moikka']
+    exitcode = palabras.cli.main(args)
+    captured = capsys.readouterr()
+    expected = 'No Spanish entry found from Wiktionary page\n'
+    assert captured.out == expected
+    assert exitcode == 1
