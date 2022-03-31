@@ -75,7 +75,7 @@ def test_get_wiktionary_spanish_section_does_not_contain_portuguese():
 def test_definition_list_item_to_str():
     li = BeautifulSoup('''
     <li>parse <a href="foo">this</a><dl><dd><span>Whatever</span>...</dd></dl></li>
-    ''').li
+    ''', features='html.parser').li
     str_definition = palabras.core.WiktionaryPageSection.definition_list_item_to_str(li)
     assert str_definition == 'parse this'
 
