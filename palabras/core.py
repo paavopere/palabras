@@ -103,12 +103,17 @@ def get_wiktionary_spanish_section(word: str, revision: Optional[int] = None) ->
 
 def get_wiktionary_page(word: str, revision: Optional[int] = None) -> WiktionaryPage:
     if revision is None:
-        r = requests.get(f'https://en.wiktionary.org/wiki/{word}')
+        url = f'https://en.wiktionary.org/wiki/{word}'
     else:
-        r = requests.get(f'https://en.wiktionary.org/w/index.php?title={word}&oldid={revision}')
-    if 'Wiktionary does not yet have an entry for' in r.text:
+        url = f'https://en.wiktionary.org/w/index.php?title={word}&oldid={revision}'
+    content = request_url_text(url)
+    if 'Wiktionary does not yet have an entry for' in content:
         raise WiktionaryPageNotFound('No Wiktionary page found')
-    return r.text
+    return content
+
+
+def request_url_text(url: str) -> str:
+    return requests.get(url).text
 
 
 def extract_spanish_section(page: WiktionaryPage) -> WiktionaryPageSection:
