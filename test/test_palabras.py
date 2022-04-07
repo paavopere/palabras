@@ -1,10 +1,22 @@
 
+import json
 from bs4 import BeautifulSoup
 from textwrap import dedent
 import pytest
+from pytest_mock import MockerFixture
 import palabras.core
 import palabras.cli
 from palabras.core import WordInfo
+
+
+# todo create
+MOCK_CACHE_FILE = ...
+with open(MOCK_CACHE_FILE) as fp:
+    MOCK_CACHE = json.load(fp)
+
+
+def url_text_from_mock_cache(url: str, mock_cache: dict = MOCK_CACHE):
+    return mock_cache['url']
 
 
 def test_get_word_info_return_type():
@@ -39,7 +51,8 @@ def test_get_wiktionary_page_nonexistent():
         palabras.core.get_wiktionary_page(word)
 
 
-def test_get_wiktionary_page_contains_translation():
+def test_get_wiktionary_page_contains_translation(mocker: MockerFixture):
+    mocker.patch('palabras.core.request_url_text', return_value='aaaa')
     word = 'culpar'
     translation = 'blame'
     result = palabras.core.get_wiktionary_page(word)
