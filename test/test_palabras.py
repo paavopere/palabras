@@ -1,37 +1,44 @@
 
 import json
-from bs4 import BeautifulSoup
+from pathlib import Path
 from textwrap import dedent
+
 import pytest
+from bs4 import BeautifulSoup
 from pytest_mock import MockerFixture
+
 import palabras.core
 import palabras.cli
 from palabras.core import WordInfo
 
 
-# todo create
-MOCK_CACHE_FILE = ...
-with open(MOCK_CACHE_FILE) as fp:
-    MOCK_CACHE = json.load(fp)
+MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
 
 
-def url_text_from_mock_cache(url: str, mock_cache: dict = MOCK_CACHE):
-    return mock_cache['url']
+@pytest.fixture()
+def mocked_request_url_text(mocker: MockerFixture):
+    """
+    Mock palabras.core.request_url_text to read URL -> content (HTML) mappings from a pre-populated
+    file instead of over the internet.
+    """
+    with open(MOCK_CACHE_FILE_PATH) as fp:
+        mock_cache: dict = json.load(fp)['url_contents']
+    mocker.patch('palabras.core.request_url_text', side_effect=mock_cache.get)
 
 
-def test_get_word_info_return_type():
+def test_get_word_info_return_type(mocked_request_url_text):
     word = 'despacito'
     wi = palabras.core.get_word_info(word)
     assert isinstance(wi, palabras.core.WordInfo)
 
 
-def test_get_word_info_from_search_return_type():
+def test_get_word_info_from_search_return_type(mocked_request_url_text):
     word = 'despacito'
     wi = WordInfo.from_search(word)
     assert isinstance(wi, palabras.core.WordInfo)
 
 
-def test_get_word_info_equals_but_is_not_word_info_from_search():
+def test_get_word_info_equals_but_is_not_word_info_from_search(mocked_request_url_text):
     word = 'despacito'
     wi1 = palabras.core.get_word_info(word)
     wi2 = WordInfo.from_search(word)
@@ -39,53 +46,52 @@ def test_get_word_info_equals_but_is_not_word_info_from_search():
     assert wi1 is not wi2
 
 
-def test_get_wiktionary_page_returns_str():
+def test_get_wiktionary_page_returns_str(mocked_request_url_text):
     word = 'despacito'
     result = palabras.core.get_wiktionary_page(word)
     assert isinstance(result, str)
 
 
-def test_get_wiktionary_page_nonexistent():
+def test_get_wiktionary_page_nonexistent(mocked_request_url_text):
     word = 'thispageaintexistent'
     with pytest.raises(palabras.core.WiktionaryPageNotFound):
         palabras.core.get_wiktionary_page(word)
 
 
-def test_get_wiktionary_page_contains_translation(mocker: MockerFixture):
-    mocker.patch('palabras.core.request_url_text', return_value='aaaa')
+def test_get_wiktionary_page_contains_translation(mocked_request_url_text):
     word = 'culpar'
     translation = 'blame'
     result = palabras.core.get_wiktionary_page(word)
     assert translation in result
 
 
-def test_get_wiktionary_page_contains_portuguese_conjugation():
+def test_get_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text):
     word = 'culpar'
     expected_contains = 'culpou'  # Portuguese 3rd person preterite
     result = palabras.core.get_wiktionary_page(word)
     assert expected_contains in result
 
 
-def test_get_wiktionary_spanish_section_return_type():
+def test_get_wiktionary_spanish_section_return_type(mocked_request_url_text):
     word = 'culpar'
     result = palabras.core.get_wiktionary_spanish_section(word)
     assert isinstance(result, palabras.core.WiktionaryPageSection)
 
 
-def test_no_spanish_definition():
+def test_no_spanish_definition(mocked_request_url_text):
     word = 'kauppa'  # a word that has Wiktionary page but no Spanish definition
     with pytest.raises(palabras.core.WiktionarySectionNotFound):
         palabras.core.get_wiktionary_spanish_section(word)
 
 
-def test_get_wiktionary_spanish_section_does_not_contain_portuguese():
+def test_get_wiktionary_spanish_section_does_not_contain_portuguese(mocked_request_url_text):
     word = 'culpar'
     portuguese_conjugation = 'culpou'  # Portuguese 3rd person preterite
     section = palabras.core.get_wiktionary_spanish_section(word)
     assert portuguese_conjugation not in section
 
 
-def test_definition_list_item_to_str():
+def test_definition_list_item_to_str(mocked_request_url_text):
     li = BeautifulSoup('''
     <li>parse <a href="foo">this</a><dl><dd><span>Whatever</span>...</dd></dl></li>
     ''', features='html.parser').li
@@ -93,13 +99,13 @@ def test_definition_list_item_to_str():
     assert str_definition == 'parse this'
 
 
-def test_lookup_definition():
+def test_lookup_definition(mocked_request_url_text):
     word = 'culpar'
     word_info = palabras.core.get_word_info(word)
     assert word_info.definition_strings[0] == 'to blame'
 
 
-def test_lookup_definition_complicated():
+def test_lookup_definition_complicated(mocked_request_url_text):
     word = 'empleado'  # this word has definitions for adjective, noun, and verb
     revision = 62175311
     word_info = palabras.core.get_word_info(word, revision=revision)
@@ -110,7 +116,7 @@ def test_lookup_definition_complicated():
     ]
 
 
-def test_lookup_different_definitions_in_history():
+def test_lookup_different_definitions_in_history(mocked_request_url_text):
     word = 'olvidar'
     revision_1 = 62345284
     revision_2 = 66217360
@@ -129,7 +135,7 @@ def test_lookup_different_definitions_in_history():
     assert palabras.core.get_word_info(word, revision=revision_2).definition_strings == expected_definitions_2
 
     
-def test_cli(capsys: pytest.CaptureFixture):
+def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['olvidar']
     palabras.cli.main(args)
     captured = capsys.readouterr()
@@ -142,7 +148,7 @@ def test_cli(capsys: pytest.CaptureFixture):
     assert captured.out == expected
     
 
-def test_cli_revision(capsys: pytest.CaptureFixture):
+def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args1 = ['olvidar', '-r', '62345284']
     args2 = ['olvidar', '--revision', '62345284']
     args3 = ['olvidar', '--revision=62345284']
@@ -161,7 +167,7 @@ def test_cli_revision(capsys: pytest.CaptureFixture):
         assert exitcode == 0
     
 
-def test_cli_ser(capsys: pytest.CaptureFixture):
+def test_cli_ser(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['ser']
     exitcode = palabras.cli.main(args)
     captured = capsys.readouterr()
@@ -178,7 +184,7 @@ def test_cli_ser(capsys: pytest.CaptureFixture):
     assert exitcode == 0
     
 
-def test_cli_nonexistent_page(capsys: pytest.CaptureFixture):
+def test_cli_nonexistent_page(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['asdasdasd']
     exitcode = palabras.cli.main(args)
     captured = capsys.readouterr()
@@ -187,7 +193,7 @@ def test_cli_nonexistent_page(capsys: pytest.CaptureFixture):
     assert exitcode == 1
     
 
-def test_cli_non_spanish_section(capsys: pytest.CaptureFixture):
+def test_cli_non_spanish_section(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['moikka']
     exitcode = palabras.cli.main(args)
     captured = capsys.readouterr()
