@@ -113,7 +113,7 @@ def get_wiktionary_page(word: str, revision: Optional[int] = None) -> Wiktionary
 
 
 def request_url_text(url: str) -> str:
-    return requests.get(url).text
+    return requests.get(url).text  # pragma: no cover
 
 
 def extract_spanish_section(page: WiktionaryPage) -> WiktionaryPageSection:
