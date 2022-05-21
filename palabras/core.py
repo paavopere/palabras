@@ -1,6 +1,6 @@
 from copy import copy
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Iterable, List, Optional, Sequence
 import requests
 import bs4
 from bs4 import BeautifulSoup
@@ -124,10 +124,19 @@ def extract_spanish_section(page: WiktionaryPage) -> WiktionaryPageSection:
 
 def _spanish_section_soup(page_soup: BeautifulSoup) -> BeautifulSoup:
     """ Get a new BeautifulSoup object that only has the tags from the Spanish section. """
-    section_soup = BeautifulSoup(features='html.parser')
-    for element in _spanish_section_tags(page_soup):
-        section_soup.append(copy(element))
-    return section_soup
+    tags = _spanish_section_tags(page_soup)
+    return tags_to_soup(tags)
+
+
+def tags_to_soup(tags: Sequence[bs4.Tag], *, features='html.parser') -> BeautifulSoup:
+    """
+    Given a list of tags, create a new BeautifulSoup object from those tags (copying tags to the
+    new soup object in order)
+    """
+    soup = BeautifulSoup(features=features)
+    for element in tags:
+        soup.append(copy(element))
+    return soup
     
 
 
