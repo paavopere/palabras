@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import WordInfo
+from palabras.core import WordInfo, get_siblings_until
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
@@ -200,3 +200,29 @@ def test_cli_non_spanish_section(capsys: pytest.CaptureFixture, mocked_request_u
     expected = 'No Spanish entry found from Wiktionary page\n'
     assert captured.out == expected
     assert exitcode == 1
+
+
+def test_get_next_siblings_until():
+    markup = (
+        '<h1>hello</h1>'
+        '<p>foo</p>'
+        '<h2>hello again</h2>'
+        '<p>bar</p>'
+        '<h1>hello 2</h1>'
+        '<p>foo 2</p>'
+        '<h2>hello again 2</h2>'
+        '<p>bar 2</p>'
+        '<h1>hello 3</h1>'
+    )
+    soup = BeautifulSoup(markup, features='html.parser')
+    tag = soup.find('h1')
+    assert len(get_siblings_until(tag, 'p')) == 1  # hello
+    assert len(get_siblings_until(tag, 'h2')) == 2  # hello ... hello again
+    assert len(get_siblings_until(tag, 'h1')) == 4  # hello ... hello 2
+    assert len(get_siblings_until(tag, 'nope')) == 9  # all tags
+    
+    tag2 = soup.find_all('h1')[1]
+    assert len(get_siblings_until(tag2, 'h1')) == 4  # hello 2 ... bar 2
+    assert len(get_siblings_until(tag2, 'nope')) == 5  # hello 2 ... hello 3
+    
+    

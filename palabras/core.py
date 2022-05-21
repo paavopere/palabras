@@ -1,6 +1,6 @@
 from copy import copy
 from dataclasses import dataclass, field
-from typing import Iterable, List, Optional, Sequence
+from typing import Container, Iterable, List, Optional, Sequence, Union
 import requests
 import bs4
 from bs4 import BeautifulSoup
@@ -137,7 +137,6 @@ def tags_to_soup(tags: Sequence[bs4.Tag], *, features='html.parser') -> Beautifu
     for element in tags:
         soup.append(copy(element))
     return soup
-    
 
 
 def _spanish_section_tags(page_soup: BeautifulSoup) -> List[PageElement]:
@@ -145,7 +144,7 @@ def _spanish_section_tags(page_soup: BeautifulSoup) -> List[PageElement]:
     TODO clarify whether these are guaranteed to be **Tag**s or if they're more general **PageElement**s
     """
     start_tag = _get_spanish_section_start_tag(page_soup)
-    return _get_next_siblings_until_h1_or_h2(start_tag)
+    return get_siblings_until(start_tag, ['h1', 'h2'])
 
 
 def _get_spanish_section_start_tag(page_soup: BeautifulSoup) -> bs4.Tag:
@@ -155,13 +154,23 @@ def _get_spanish_section_start_tag(page_soup: BeautifulSoup) -> bs4.Tag:
     start_tag = section_id_tag.parent
     assert start_tag.name == 'h2'
     return start_tag
-    
 
-def _get_next_siblings_until_h1_or_h2(element: PageElement) -> List[PageElement]:
-    section_tags = [element]
+
+def get_siblings_until(
+        element: PageElement, 
+        until: Union[str, Container[str]]
+    ) -> List[PageElement]:
+    """
+    Return a list of sibling elements until the next occurrence of a certain tag name (or 
+    list/tuple/etc. of tag names).
+    
+    The `element` itself is included, and the found occurrence of `until` is excluded.
+    """
+    break_names = [until] if isinstance(until, str) else until
+    found = [element]
     for sibling in element.next_siblings:
-        if sibling.name in ('h1', 'h2'):
+        if sibling.name in break_names:
             break
         else:
-            section_tags.append(sibling)
-    return section_tags
+            found.append(sibling)
+    return found
