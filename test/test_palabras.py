@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import WordInfo, get_siblings_until
+from palabras.core import WiktionaryPage, WiktionaryPageStr, WordInfo, get_siblings_until, request_url_text
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
@@ -48,27 +48,27 @@ def test_get_word_info_equals_but_is_not_word_info_from_search(mocked_request_ur
 
 def test_get_wiktionary_page_returns_str(mocked_request_url_text):
     word = 'despacito'
-    result = palabras.core.get_wiktionary_page(word)
+    result = palabras.core.get_wiktionary_page_str(word)
     assert isinstance(result, str)
 
 
 def test_get_wiktionary_page_nonexistent(mocked_request_url_text):
     word = 'thispageaintexistent'
     with pytest.raises(palabras.core.WiktionaryPageNotFound):
-        palabras.core.get_wiktionary_page(word)
+        palabras.core.get_wiktionary_page_str(word)
 
 
 def test_get_wiktionary_page_contains_translation(mocked_request_url_text):
     word = 'culpar'
     translation = 'blame'
-    result = palabras.core.get_wiktionary_page(word)
+    result = palabras.core.get_wiktionary_page_str(word)
     assert translation in result
 
 
 def test_get_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text):
     word = 'culpar'
     expected_contains = 'culpou'  # Portuguese 3rd person preterite
-    result = palabras.core.get_wiktionary_page(word)
+    result = palabras.core.get_wiktionary_page_str(word)
     assert expected_contains in result
 
 
@@ -226,3 +226,10 @@ def test_get_next_siblings_until():
     assert len(get_siblings_until(tag2, 'nope')) == 5  # hello 2 ... hello 3
     
     
+def test_get_page_object():
+    word = 'ser'
+    html = request_url_text(f'https://en.wiktionary.org/wiki/{word}')
+    soup = BeautifulSoup(html, features='html.parser')
+    
+    page = WiktionaryPage(soup)
+    assert isinstance(page, WiktionaryPage)

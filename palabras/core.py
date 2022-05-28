@@ -7,8 +7,7 @@ from bs4 import BeautifulSoup
 from bs4.element import PageElement
 
 
-WiktionaryPage = str
-WiktionaryPageSection = str
+WiktionaryPageStr = str  # TODO remove this and implement WiktionaryPage instead
 
 
 class WiktionaryPageNotFound(LookupError):
@@ -28,6 +27,11 @@ class WordInfo:
     def from_search(cls, word: str, *, revision: Optional[int] = None):
         section = get_wiktionary_spanish_section(word, revision)
         return cls(word=word, definition_strings=section.definitions())
+    
+    
+class WiktionaryPage:
+    def __init__(self, soup: BeautifulSoup):
+        self.soup = copy(soup)
 
 
 class WiktionaryPageSection:
@@ -97,11 +101,12 @@ def get_word_info(word: str, revision: Optional[int] = None):
 
 
 def get_wiktionary_spanish_section(word: str, revision: Optional[int] = None) -> WiktionaryPageSection:
-    page = get_wiktionary_page(word, revision)
+    page = get_wiktionary_page_str(word, revision)
     return extract_spanish_section(page)
 
 
-def get_wiktionary_page(word: str, revision: Optional[int] = None) -> WiktionaryPage:
+# TODO remove in favor of WiktionaryPage object
+def get_wiktionary_page_str(word: str, revision: Optional[int] = None) -> WiktionaryPageStr:
     if revision is None:
         url = f'https://en.wiktionary.org/wiki/{word}'
     else:
@@ -116,7 +121,7 @@ def request_url_text(url: str) -> str:
     return requests.get(url).text  # pragma: no cover
 
 
-def extract_spanish_section(page: WiktionaryPage) -> WiktionaryPageSection:
+def extract_spanish_section(page: WiktionaryPageStr) -> WiktionaryPageSection:
     page_soup = BeautifulSoup(page, features='html.parser')
     section_soup = _spanish_section_soup(page_soup)
     return WiktionaryPageSection(soup=section_soup)
