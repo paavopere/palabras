@@ -32,6 +32,10 @@ class WordInfo:
 class WiktionaryPage:
     def __init__(self, soup: BeautifulSoup):
         self.soup = copy(soup)
+        
+    @classmethod
+    def from_word(cls, word, revision=None):
+        pass
 
 
 class WiktionaryPageSection:

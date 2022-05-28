@@ -226,10 +226,23 @@ def test_get_next_siblings_until():
     assert len(get_siblings_until(tag2, 'nope')) == 5  # hello 2 ... hello 3
     
     
-def test_get_page_object():
+def test_page_object():
     word = 'ser'
     html = request_url_text(f'https://en.wiktionary.org/wiki/{word}')
     soup = BeautifulSoup(html, features='html.parser')
     
     page = WiktionaryPage(soup)
+    assert isinstance(page, WiktionaryPage)
+    
+    
+def test_page_object_from_word():
+    word = 'ser'
+    page = WiktionaryPage.from_word(word)
+    assert isinstance(page, WiktionaryPage)
+    
+    
+def test_page_object_from_word_and_revision():
+    word = 'empleado'
+    revision = 62175311
+    page = WiktionaryPage.from_word(word, revision)
     assert isinstance(page, WiktionaryPage)
