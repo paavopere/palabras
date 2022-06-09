@@ -30,6 +30,10 @@ class WordInfo:
     
 
 class WiktionaryPage:
+    
+    word: Optional[str] = None
+    revision: Optional[int] = None
+    
     def __init__(self, soup: BeautifulSoup):
         self.soup = copy(soup)
         
@@ -37,7 +41,10 @@ class WiktionaryPage:
     def from_word(cls, word, revision=None):
         html = get_wiktionary_page_str(word, revision)
         soup = BeautifulSoup(html, features='html.parser')
-        return cls(soup=soup)
+        page = cls(soup=soup)
+        page.word = word
+        page.revision = revision
+        return page
 
 
 class WiktionaryPageSection:

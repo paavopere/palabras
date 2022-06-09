@@ -246,3 +246,12 @@ def test_page_object_from_word_and_revision():
     revision = 62175311
     page = WiktionaryPage.from_word(word, revision)
     assert isinstance(page, WiktionaryPage)
+    
+    
+def test_page_object_attributes():
+    word = 'empleado'
+    revision = 62175311
+    page = WiktionaryPage.from_word(word, revision)
+    assert page.word == word
+    assert page.revision == revision
+    
