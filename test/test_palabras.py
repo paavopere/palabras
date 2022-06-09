@@ -49,39 +49,39 @@ def test_get_word_info_equals_but_is_not_word_info_from_search(mocked_request_ur
 def test_get_wiktionary_page_nonexistent(mocked_request_url_text):
     word = 'thispageaintexistent'
     with pytest.raises(palabras.core.WiktionaryPageNotFound):
-        palabras.core.WiktionaryPage.from_word(word)
+        palabras.core.WiktionaryPage(word)
 
 
 def test_get_wiktionary_page_contains_translation(mocked_request_url_text):
     word = 'culpar'
     translation = 'blame'
-    page = palabras.core.WiktionaryPage.from_word(word)
+    page = palabras.core.WiktionaryPage(word)
     assert translation in str(page.soup)
 
 
-def test_get_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text):
+def test_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text):
     word = 'culpar'
     expected_contains = 'culpou'  # Portuguese 3rd person preterite
-    page = palabras.core.WiktionaryPage.from_word(word)
+    page = palabras.core.WiktionaryPage(word)
     assert expected_contains in str(page.soup)
 
 
 def test_spanish_section_type(mocked_request_url_text):
     word = 'culpar'
-    result = WiktionaryPage.from_word(word).get_spanish_section()
+    result = WiktionaryPage(word).get_spanish_section()
     assert isinstance(result, palabras.core.WiktionaryPageSection)
 
 
 def test_no_spanish_definition(mocked_request_url_text):
     word = 'kauppa'  # a word that has Wiktionary page but no Spanish definition
     with pytest.raises(palabras.core.WiktionarySectionNotFound):
-        WiktionaryPage.from_word(word).get_spanish_section()
+        WiktionaryPage(word).get_spanish_section()
 
 
 def test_spanish_section_does_not_contain_portuguese(mocked_request_url_text):
     word = 'culpar'
     portuguese_conjugation = 'culpou'  # Portuguese 3rd person preterite
-    section = WiktionaryPage.from_word(word).get_spanish_section()
+    section = WiktionaryPage(word).get_spanish_section()
     assert portuguese_conjugation not in section
 
 
@@ -222,30 +222,21 @@ def test_get_next_siblings_until():
     
 def test_page_object():
     word = 'ser'
-    html = request_url_text(f'https://en.wiktionary.org/wiki/{word}')
-    soup = BeautifulSoup(html, features='html.parser')
-    
-    page = WiktionaryPage(soup)
-    assert isinstance(page, WiktionaryPage)
-    
-    
-def test_page_object_from_word():
-    word = 'ser'
-    page = WiktionaryPage.from_word(word)
+    page = WiktionaryPage(word)
     assert isinstance(page, WiktionaryPage)
     
     
 def test_page_object_from_word_and_revision():
     word = 'empleado'
     revision = 62175311
-    page = WiktionaryPage.from_word(word, revision)
+    page = WiktionaryPage(word, revision)
     assert isinstance(page, WiktionaryPage)
     
     
 def test_page_object_attributes():
     word = 'empleado'
     revision = 62175311
-    page = WiktionaryPage.from_word(word, revision)
+    page = WiktionaryPage(word, revision)
     assert page.word == word
     assert page.revision == revision
     

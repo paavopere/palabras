@@ -26,7 +26,7 @@ class WordInfo:
 
     @classmethod
     def from_search(cls, word: str, *, revision: Optional[int] = None):
-        section = WiktionaryPage.from_word(word, revision).get_spanish_section()
+        section = WiktionaryPage(word, revision).get_spanish_section()
         return cls(word=word, definition_strings=section.definitions())
 
 
@@ -43,11 +43,6 @@ class WiktionaryPage:
             markup=self.get_page_html(word, revision), 
             features='html.parser'
         )
-
-    # TODO Remove, this is now unnecessary
-    @classmethod
-    def from_word(cls, word, revision=None):
-        return cls(word, revision)
     
     @staticmethod
     def get_page_html(word, revision=None):
