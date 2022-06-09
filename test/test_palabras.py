@@ -46,30 +46,24 @@ def test_get_word_info_equals_but_is_not_word_info_from_search(mocked_request_ur
     assert wi1 is not wi2
 
 
-def test_get_wiktionary_page_returns_str(mocked_request_url_text):
-    word = 'despacito'
-    result = palabras.core.get_wiktionary_page_str(word)
-    assert isinstance(result, str)
-
-
 def test_get_wiktionary_page_nonexistent(mocked_request_url_text):
     word = 'thispageaintexistent'
     with pytest.raises(palabras.core.WiktionaryPageNotFound):
-        palabras.core.get_wiktionary_page_str(word)
+        palabras.core.WiktionaryPage.from_word(word)
 
 
 def test_get_wiktionary_page_contains_translation(mocked_request_url_text):
     word = 'culpar'
     translation = 'blame'
-    result = palabras.core.get_wiktionary_page_str(word)
-    assert translation in result
+    page = palabras.core.WiktionaryPage.from_word(word)
+    assert translation in str(page.soup)
 
 
 def test_get_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text):
     word = 'culpar'
     expected_contains = 'culpou'  # Portuguese 3rd person preterite
-    result = palabras.core.get_wiktionary_page_str(word)
-    assert expected_contains in result
+    page = palabras.core.WiktionaryPage.from_word(word)
+    assert expected_contains in str(page.soup)
 
 
 def test_get_wiktionary_spanish_section_return_type(mocked_request_url_text):

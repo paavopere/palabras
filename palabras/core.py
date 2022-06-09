@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from copy import copy
 from dataclasses import dataclass, field
 from typing import Container, Iterable, List, Optional, Sequence, Union
@@ -5,7 +7,6 @@ import requests
 import bs4
 from bs4 import BeautifulSoup
 from bs4.element import PageElement
-
 
 WiktionaryPageStr = str  # TODO remove this and implement WiktionaryPage instead
 
@@ -27,27 +28,41 @@ class WordInfo:
     def from_search(cls, word: str, *, revision: Optional[int] = None):
         section = get_wiktionary_spanish_section(word, revision)
         return cls(word=word, definition_strings=section.definitions())
-    
+
 
 class WiktionaryPage:
-    
     word: Optional[str] = None
     revision: Optional[int] = None
-    
+
     def __init__(self, soup: BeautifulSoup):
         self.soup = copy(soup)
-        
+
     @classmethod
     def from_word(cls, word, revision=None):
-        html = get_wiktionary_page_str(word, revision)
+        html = cls.get_page_html(word, revision)
         soup = BeautifulSoup(html, features='html.parser')
         page = cls(soup=soup)
         page.word = word
         page.revision = revision
         return page
+    
+    @staticmethod
+    def get_page_html(word, revision=None):
+        if revision is None:
+            url = f'https://en.wiktionary.org/wiki/{word}'
+        else:
+            url = f'https://en.wiktionary.org/w/index.php?title={word}&oldid={revision}'
+        content = request_url_text(url)
+        if 'Wiktionary does not yet have an entry for' in content:
+            raise WiktionaryPageNotFound('No Wiktionary page found')
+        return content
+
+    def get_spanish_section(self) -> WiktionaryPageSection:
+        return WiktionaryPageSection(soup=_spanish_section_soup(self.soup))
 
 
 class WiktionaryPageSection:
+
     def __init__(self, soup: BeautifulSoup):
         self.soup = self._clean_soup(soup)
 
@@ -57,13 +72,12 @@ class WiktionaryPageSection:
         soup = copy(soup)  # TODO assert that the original soup is unchanged
         for e in soup.find_all(class_='wiktQuote'):
             e.parent.decompose()
-        
+
         # remove nested lists from definition list items
         for li in WiktionaryPageSection._definition_list_items_from_soup(soup):
             for e in li.find_all('ul'):
                 e.decompose()
-            
-        
+
         return soup
 
     def __contains__(self, other: str) -> bool:
@@ -72,19 +86,22 @@ class WiktionaryPageSection:
     def definitions(self) -> List[str]:
         definitions_ = []
         for definition_list_item in self._definition_list_items():
-            definitions_.append(self.definition_list_item_to_str(definition_list_item))
+            definitions_.append(
+                self.definition_list_item_to_str(definition_list_item))
         return definitions_
 
     # TODO remove
     def _definition_list_items(self):
         return self._definition_list_items_from_soup(self.soup)
-    
+
     @staticmethod
     def _definition_list_items_from_soup(soup):
         headwords = soup.find_all(class_='headword')
 
         # a bunch of `ol`s that contain a number of definition list items
-        definition_lists = [hw.parent.find_next_sibling('ol') for hw in headwords]
+        definition_lists = [
+            hw.parent.find_next_sibling('ol') for hw in headwords
+        ]
 
         # a bunch of `li`s that contain one definition "line"
         definition_list_items = []
@@ -93,8 +110,7 @@ class WiktionaryPageSection:
                 definition_list_items.append(dli)
 
         return definition_list_items
-    
-    
+
     @staticmethod
     def definition_list_item_to_str(li: bs4.Tag) -> str:
         """
@@ -113,31 +129,15 @@ def get_word_info(word: str, revision: Optional[int] = None):
     return WordInfo(word, definition_strings=section.definitions())
 
 
-def get_wiktionary_spanish_section(word: str, revision: Optional[int] = None) -> WiktionaryPageSection:
-    page = get_wiktionary_page_str(word, revision)
-    return extract_spanish_section(page)
-
-
-# TODO remove in favor of WiktionaryPage object
-def get_wiktionary_page_str(word: str, revision: Optional[int] = None) -> WiktionaryPageStr:
-    if revision is None:
-        url = f'https://en.wiktionary.org/wiki/{word}'
-    else:
-        url = f'https://en.wiktionary.org/w/index.php?title={word}&oldid={revision}'
-    content = request_url_text(url)
-    if 'Wiktionary does not yet have an entry for' in content:
-        raise WiktionaryPageNotFound('No Wiktionary page found')
-    return content
+def get_wiktionary_spanish_section(word: str,
+                                   revision: Optional[int] = None
+                                   ) -> WiktionaryPageSection:
+    page = WiktionaryPage.from_word(word, revision)
+    return page.get_spanish_section()
 
 
 def request_url_text(url: str) -> str:
     return requests.get(url).text  # pragma: no cover
-
-
-def extract_spanish_section(page: WiktionaryPageStr) -> WiktionaryPageSection:
-    page_soup = BeautifulSoup(page, features='html.parser')
-    section_soup = _spanish_section_soup(page_soup)
-    return WiktionaryPageSection(soup=section_soup)
 
 
 def _spanish_section_soup(page_soup: BeautifulSoup) -> BeautifulSoup:
@@ -146,7 +146,9 @@ def _spanish_section_soup(page_soup: BeautifulSoup) -> BeautifulSoup:
     return tags_to_soup(tags)
 
 
-def tags_to_soup(tags: Sequence[bs4.Tag], *, features='html.parser') -> BeautifulSoup:
+def tags_to_soup(tags: Sequence[bs4.Tag],
+                 *,
+                 features='html.parser') -> BeautifulSoup:
     """
     Given a list of tags, create a new BeautifulSoup object from those tags (copying tags to the
     new soup object in order)
@@ -168,16 +170,15 @@ def _spanish_section_tags(page_soup: BeautifulSoup) -> List[PageElement]:
 def _get_spanish_section_start_tag(page_soup: BeautifulSoup) -> bs4.Tag:
     section_id_tag: bs4.Tag = page_soup.find(id='Spanish')
     if section_id_tag is None:
-        raise WiktionarySectionNotFound('No Spanish entry found from Wiktionary page')
+        raise WiktionarySectionNotFound(
+            'No Spanish entry found from Wiktionary page')
     start_tag = section_id_tag.parent
     assert start_tag.name == 'h2'
     return start_tag
 
 
-def get_siblings_until(
-        element: PageElement, 
-        until: Union[str, Container[str]]
-    ) -> List[PageElement]:
+def get_siblings_until(element: PageElement,
+                       until: Union[str, Container[str]]) -> List[PageElement]:
     """
     Return a list of sibling elements until the next occurrence of a certain tag name (or 
     list/tuple/etc. of tag names).
