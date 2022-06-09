@@ -28,14 +28,16 @@ class WordInfo:
         section = get_wiktionary_spanish_section(word, revision)
         return cls(word=word, definition_strings=section.definitions())
     
-    
+
 class WiktionaryPage:
     def __init__(self, soup: BeautifulSoup):
         self.soup = copy(soup)
         
     @classmethod
     def from_word(cls, word, revision=None):
-        pass
+        html = get_wiktionary_page_str(word, revision)
+        soup = BeautifulSoup(html, features='html.parser')
+        return cls(soup=soup)
 
 
 class WiktionaryPageSection:
