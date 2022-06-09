@@ -34,17 +34,20 @@ class WiktionaryPage:
     word: Optional[str] = None
     revision: Optional[int] = None
 
-    def __init__(self, soup: BeautifulSoup):
-        self.soup = copy(soup)
+    def __init__(self,
+                 word: str,
+                 revision: Optional[int] = None):
+        self.word = word
+        self.revision = revision
+        self.soup = BeautifulSoup(
+            markup=self.get_page_html(word, revision), 
+            features='html.parser'
+        )
 
+    # TODO Remove, this is now unnecessary
     @classmethod
     def from_word(cls, word, revision=None):
-        html = cls.get_page_html(word, revision)
-        soup = BeautifulSoup(html, features='html.parser')
-        page = cls(soup=soup)
-        page.word = word
-        page.revision = revision
-        return page
+        return cls(word, revision)
     
     @staticmethod
     def get_page_html(word, revision=None):
