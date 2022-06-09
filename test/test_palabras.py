@@ -66,22 +66,22 @@ def test_get_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_
     assert expected_contains in str(page.soup)
 
 
-def test_get_wiktionary_spanish_section_return_type(mocked_request_url_text):
+def test_spanish_section_type(mocked_request_url_text):
     word = 'culpar'
-    result = palabras.core.get_wiktionary_spanish_section(word)
+    result = WiktionaryPage.from_word(word).get_spanish_section()
     assert isinstance(result, palabras.core.WiktionaryPageSection)
 
 
 def test_no_spanish_definition(mocked_request_url_text):
     word = 'kauppa'  # a word that has Wiktionary page but no Spanish definition
     with pytest.raises(palabras.core.WiktionarySectionNotFound):
-        palabras.core.get_wiktionary_spanish_section(word)
+        WiktionaryPage.from_word(word).get_spanish_section()
 
 
-def test_get_wiktionary_spanish_section_does_not_contain_portuguese(mocked_request_url_text):
+def test_spanish_section_does_not_contain_portuguese(mocked_request_url_text):
     word = 'culpar'
     portuguese_conjugation = 'culpou'  # Portuguese 3rd person preterite
-    section = palabras.core.get_wiktionary_spanish_section(word)
+    section = WiktionaryPage.from_word(word).get_spanish_section()
     assert portuguese_conjugation not in section
 
 

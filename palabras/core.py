@@ -26,7 +26,7 @@ class WordInfo:
 
     @classmethod
     def from_search(cls, word: str, *, revision: Optional[int] = None):
-        section = get_wiktionary_spanish_section(word, revision)
+        section = WiktionaryPage.from_word(word, revision).get_spanish_section()
         return cls(word=word, definition_strings=section.definitions())
 
 
@@ -125,15 +125,8 @@ class WiktionaryPageSection:
 
 
 def get_word_info(word: str, revision: Optional[int] = None):
-    section = get_wiktionary_spanish_section(word, revision)
+    section = WiktionaryPage.from_word(word, revision).get_spanish_section()
     return WordInfo(word, definition_strings=section.definitions())
-
-
-def get_wiktionary_spanish_section(word: str,
-                                   revision: Optional[int] = None
-                                   ) -> WiktionaryPageSection:
-    page = WiktionaryPage.from_word(word, revision)
-    return page.get_spanish_section()
 
 
 def request_url_text(url: str) -> str:
