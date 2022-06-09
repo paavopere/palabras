@@ -56,14 +56,14 @@ def test_get_wiktionary_page_contains_translation(mocked_request_url_text):
     word = 'culpar'
     translation = 'blame'
     page = palabras.core.WiktionaryPage(word)
-    assert translation in str(page.soup)
+    assert translation in page
 
 
 def test_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text):
     word = 'culpar'
     expected_contains = 'culpou'  # Portuguese 3rd person preterite
     page = palabras.core.WiktionaryPage(word)
-    assert expected_contains in str(page.soup)
+    assert expected_contains in page
 
 
 def test_spanish_section_type(mocked_request_url_text):

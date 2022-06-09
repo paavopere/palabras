@@ -55,6 +55,9 @@ class WiktionaryPage:
             raise WiktionaryPageNotFound('No Wiktionary page found')
         return content
 
+    def __contains__(self, other: str) -> bool:
+        return other in str(self.soup)
+
     def get_spanish_section(self) -> WiktionaryPageSection:
         return WiktionaryPageSection(soup=_spanish_section_soup(self.soup))
 
