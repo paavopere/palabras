@@ -59,7 +59,41 @@ class WiktionaryPage:
         return other in str(self.soup)
 
     def get_spanish_section(self) -> WiktionaryPageSection:
-        return WiktionaryPageSection(soup=_spanish_section_soup(self.soup))
+        return self.get_section(language='Spanish')
+    
+    def get_section(self, language: str):
+        return WiktionaryPageSection(
+            soup=_extract_section_from_soup(self.soup, language=language)
+        )
+    
+
+def _extract_section_from_soup(page_soup: BeautifulSoup, language: str) -> BeautifulSoup:
+    """
+    Get a new BeautifulSoup object that only has the tags from the section that matches 
+    `language`.
+    """
+    tags = _language_section_tags(page_soup, language)
+    return tags_to_soup(tags)
+
+
+def _language_section_tags(page_soup: BeautifulSoup, language: str) -> List[PageElement]:
+    """
+    Get a list of all BeautifulSoup tags in the logical section that matches `language`.
+    
+    TODO clarify whether these are guaranteed to be **Tag**s or if they're more general 
+        **PageElement**s
+    """
+    start_tag = _language_section_start_tag(page_soup, language)
+    return get_siblings_until(start_tag, ['h1', 'h2'])
+    
+    
+def _language_section_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.Tag:
+    section_id_tag: bs4.Tag = page_soup.find(id=language)
+    if section_id_tag is None:
+        raise WiktionarySectionNotFound('No Spanish entry found from Wiktionary page')
+    start_tag = section_id_tag.parent
+    assert start_tag.name == 'h2'
+    return start_tag
 
 
 class WiktionaryPageSection:
@@ -133,12 +167,6 @@ def request_url_text(url: str) -> str:
     return requests.get(url).text  # pragma: no cover
 
 
-def _spanish_section_soup(page_soup: BeautifulSoup) -> BeautifulSoup:
-    """ Get a new BeautifulSoup object that only has the tags from the Spanish section. """
-    tags = _spanish_section_tags(page_soup)
-    return tags_to_soup(tags)
-
-
 def tags_to_soup(tags: Sequence[bs4.Tag],
                  *,
                  features='html.parser') -> BeautifulSoup:
@@ -150,24 +178,6 @@ def tags_to_soup(tags: Sequence[bs4.Tag],
     for element in tags:
         soup.append(copy(element))
     return soup
-
-
-def _spanish_section_tags(page_soup: BeautifulSoup) -> List[PageElement]:
-    """ Get a list of all BeautifulSoup tags in the logical "Spanish" section.
-    TODO clarify whether these are guaranteed to be **Tag**s or if they're more general **PageElement**s
-    """
-    start_tag = _get_spanish_section_start_tag(page_soup)
-    return get_siblings_until(start_tag, ['h1', 'h2'])
-
-
-def _get_spanish_section_start_tag(page_soup: BeautifulSoup) -> bs4.Tag:
-    section_id_tag: bs4.Tag = page_soup.find(id='Spanish')
-    if section_id_tag is None:
-        raise WiktionarySectionNotFound(
-            'No Spanish entry found from Wiktionary page')
-    start_tag = section_id_tag.parent
-    assert start_tag.name == 'h2'
-    return start_tag
 
 
 def get_siblings_until(element: PageElement,
