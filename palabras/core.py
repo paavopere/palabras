@@ -125,8 +125,7 @@ class WiktionaryPageSection:
 
 
 def get_word_info(word: str, revision: Optional[int] = None):
-    section = WiktionaryPage.from_word(word, revision).get_spanish_section()
-    return WordInfo(word, definition_strings=section.definitions())
+    return WordInfo.from_search(word=word, revision=revision)
 
 
 def request_url_text(url: str) -> str:
