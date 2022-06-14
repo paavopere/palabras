@@ -63,11 +63,11 @@ class WiktionaryPage:
     
     def get_section(self, language: str):
         return WiktionaryPageSection(
-            soup=_extract_section_from_soup(self.soup, language=language)
+            soup=_extract_language_section(self.soup, language=language)
         )
     
 
-def _extract_section_from_soup(page_soup: BeautifulSoup, language: str) -> BeautifulSoup:
+def _extract_language_section(page_soup: BeautifulSoup, language: str) -> BeautifulSoup:
     """
     Get a new BeautifulSoup object that only has the tags from the section that matches 
     `language`.
