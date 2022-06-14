@@ -125,8 +125,10 @@ def test_lookup_different_definitions_in_history(mocked_request_url_text):
         '(with de, reflexive, intransitive) to forget, to leave behind'
     ]
 
-    assert palabras.core.get_word_info(word, revision=revision_1).definition_strings == expected_definitions_1
-    assert palabras.core.get_word_info(word, revision=revision_2).definition_strings == expected_definitions_2
+    assert palabras.core.get_word_info(word, revision=revision_1).definition_strings \
+        == expected_definitions_1
+    assert palabras.core.get_word_info(word, revision=revision_2).definition_strings \
+        == expected_definitions_2
 
     
 def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
