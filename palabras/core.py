@@ -84,7 +84,7 @@ def _language_section_tags(page_soup: BeautifulSoup, language: str) -> List[Page
         **PageElement**s
     """
     start_tag = _language_section_start_tag(page_soup, language)
-    return get_siblings_on_level(start_tag)
+    return get_heading_siblings_on_level(start_tag)
     
     
 def _language_section_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.Tag:
@@ -187,7 +187,7 @@ def tags_to_soup(tags: Sequence[bs4.Tag],
     return soup
 
 
-def get_siblings_on_level(element):
+def get_heading_siblings_on_level(element):
     """
     Return a list of sibling elements until the next occurrence of a heading on the same 
     or higher level.
