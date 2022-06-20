@@ -119,7 +119,10 @@ class WiktionaryPageSection:
         return other in str(self.soup)
     
     def get_subsections(self, level='h3') -> List[Subsection]:
-        raise NotImplementedError
+        subheadings = self.soup.find_all(level)
+        tag_sets = [get_heading_siblings_on_level(sh) for sh in subheadings]
+        subsoups = [tags_to_soup(tags) for tags in tag_sets]
+        return [Subsection(subsoup) for subsoup in subsoups]
 
     def definitions(self) -> List[str]:
         definitions_ = []
@@ -163,7 +166,9 @@ class WiktionaryPageSection:
 
 
 class Subsection(WiktionaryPageSection):
-    pass
+    @property
+    def title(self):
+        return self.soup.find(class_='mw-headline').text
 
 
 def get_word_info(word: str, revision: Optional[int] = None):
