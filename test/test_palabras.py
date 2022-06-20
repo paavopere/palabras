@@ -251,6 +251,21 @@ def test_get_subsections_len_and_type():
     assert len(subsections) > 0  # this page has sections
     for subsection in subsections:
         assert isinstance(subsection, Subsection)
+
+
+def test_get_subsections_titles():
+    page = WiktionaryPage('empleado')
+    section = page.get_spanish_section()
+    subsections = section.get_subsections()
+    titles = [ss.title for ss in subsections]
+    assert titles == [
+        'Etymology',
+        'Pronunciation',
+        'Adjective',
+        'Noun',
+        'Verb',
+        'Further reading'
+    ]
         
         
 def test_get_heading_siblings_on_level():
