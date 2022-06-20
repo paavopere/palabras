@@ -266,6 +266,21 @@ def test_get_subsections_titles():
         'Verb',
         'Further reading'
     ]
+    
+    
+def test_get_specific_subsection():
+    page = WiktionaryPage('empleado')
+    section = page.get_spanish_section()
+    subsection_adjective = section.get_subsection('Adjective')
+    assert isinstance(subsection_adjective, Subsection)
+    assert subsection_adjective.title == 'Adjective'
+    
+    
+def test_get_nonexistent_subsection():
+    page = WiktionaryPage('empleado')
+    section = page.get_spanish_section()
+    with pytest.raises(KeyError, match='No section with title:'):
+        subsection = section.get_subsection('Nonexistent section')
         
         
 def test_get_heading_siblings_on_level():
