@@ -10,7 +10,7 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import Subsection, WiktionaryPage, WordInfo, get_siblings_on_level, get_siblings_until, request_url_text
+from palabras.core import Subsection, WiktionaryPage, WordInfo, get_heading_siblings_on_level, get_siblings_until, request_url_text
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
@@ -251,14 +251,34 @@ def test_get_subsections_len_and_type():
     assert len(subsections) > 0  # this page has sections
     for subsection in subsections:
         assert isinstance(subsection, Subsection)
+        
+        
+def test_get_heading_siblings_on_level():
+    soup = BeautifulSoup(
+        '<h1>tag 1</h1>'
+        '<h2>tag 2</h2>'
+        '<h3>tag 3</h3>'
+        '<p>tag 4</p>'
+        '<h3>tag 5</h3>'
+        '<h2>tag 6</h2>',
+        features='html.parser'
+    )
+    element = soup.h2  # find the first h2
+    # should find 2,3,4,5
+    assert len(get_heading_siblings_on_level(element)) == 4
+    
+    element = soup.h3 # find the first h3
+    # should find 3,4
+    assert len(get_heading_siblings_on_level(element)) == 2
 
 
 def test_get_siblings_on_level_error_on_unexpected_element():
     soup = BeautifulSoup(
+        '<h1>one</h1>'
         '<li>get_siblings_on_level</li>'
         '<li>only works for headings</li>',
         features='html.parser'
     )
     element = soup.li
-    with pytest.raises(ValueError, match='expected one of'):
-        get_siblings_on_level(element)
+    with pytest.raises(ValueError):
+        get_heading_siblings_on_level(element)
