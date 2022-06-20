@@ -123,6 +123,14 @@ class WiktionaryPageSection:
         tag_sets = [get_heading_siblings_on_level(sh) for sh in subheadings]
         subsoups = [tags_to_soup(tags) for tags in tag_sets]
         return [Subsection(subsoup) for subsoup in subsoups]
+    
+    def get_subsection(self, title, *, level='h3') -> Subsection:
+        subsections = self.get_subsections(level=level)
+        for ss in subsections:
+            if ss.title == title:
+                return ss
+        else:
+            raise KeyError(f'No section with title: {title}')
 
     def definitions(self) -> List[str]:
         definitions_ = []
