@@ -177,6 +177,9 @@ class Subsection(WiktionaryPageSection):
     @property
     def title(self):
         return self.soup.find(class_='mw-headline').text
+    
+    def content_string(self) -> str:
+        raise NotImplementedError
 
 
 def get_word_info(word: str, revision: Optional[int] = None):

@@ -280,7 +280,17 @@ def test_get_nonexistent_subsection():
     page = WiktionaryPage('empleado')
     section = page.get_spanish_section()
     with pytest.raises(KeyError, match='No section with title:'):
-        subsection = section.get_subsection('Nonexistent section')
+        section.get_subsection('Nonexistent section')
+        
+        
+def test_adjective_subsection_content_string():
+    page = WiktionaryPage('empleado')
+    expected = dedent('''
+        empleado (feminine empleada, masculine plural empleados, feminine plural empleadas)
+        - employed
+    ''').lstrip()
+    ss = page.get_spanish_section().get_subsection('Adjective')
+    assert ss.content_string() == expected
         
         
 def test_get_heading_siblings_on_level():
