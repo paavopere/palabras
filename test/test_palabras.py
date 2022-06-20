@@ -1,5 +1,6 @@
 
 import json
+from multiprocessing.sharedctypes import Value
 from pathlib import Path
 from textwrap import dedent
 
@@ -9,7 +10,7 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import WiktionaryPage, WordInfo, get_siblings_until, request_url_text
+from palabras.core import Subsection, WiktionaryPage, WordInfo, get_siblings_on_level, get_siblings_until, request_url_text
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
@@ -241,4 +242,23 @@ def test_page_object_attributes():
     page = WiktionaryPage(word, revision)
     assert page.word == word
     assert page.revision == revision
-    
+
+
+def test_get_subsections_len_and_type():
+    page = WiktionaryPage('empleado')
+    section = page.get_spanish_section()
+    subsections = section.get_subsections()
+    assert len(subsections) > 0  # this page has sections
+    for subsection in subsections:
+        assert isinstance(subsection, Subsection)
+
+
+def test_get_siblings_on_level_error_on_unexpected_element():
+    soup = BeautifulSoup(
+        '<li>get_siblings_on_level</li>'
+        '<li>only works for headings</li>',
+        features='html.parser'
+    )
+    element = soup.li
+    with pytest.raises(ValueError, match='expected one of'):
+        get_siblings_on_level(element)
