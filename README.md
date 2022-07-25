@@ -1,6 +1,8 @@
 # palabras
 (WIP) CLI app to look up Spanish words on Wiktionary
 
+[![Tests](https://github.com/paavopere/palabras/actions/workflows/tests.yml/badge.svg)](https://github.com/paavopere/palabras/actions/workflows/tests.yml)
+
 ## Usage
 
 Call from command line like this:
