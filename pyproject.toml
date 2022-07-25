@@ -19,7 +19,9 @@ dependencies = [
 test = [
     "pytest",
     "pytest-cov",
-    "pytest-mock"
+    "pytest-mock",
+    "mypy",
+    "types-requests",
 ]
 
 
