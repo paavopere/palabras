@@ -17,10 +17,11 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "mypy",
     "pytest",
     "pytest-cov",
-    "pytest-mock"
+    "pytest-mock",
+    "mypy",
+    "types-requests",
 ]
 
 

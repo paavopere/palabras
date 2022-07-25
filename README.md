@@ -53,5 +53,5 @@ All tests should pass and coverage should be 100%.
 
 Run type checks:
 ```
-mypy palabras --install-types --ignore-missing-imports
+mypy palabras --ignore-missing-imports
 ```

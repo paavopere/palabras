@@ -21,4 +21,4 @@ jobs:
       run: pytest --cov --cov-report=term-missing
     - name: mypy
       run: |
-        mypy palabras --install-types --ignore-missing-imports
+        mypy palabras --ignore-missing-imports
