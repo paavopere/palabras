@@ -15,6 +15,13 @@ dependencies = [
     "requests"
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock"
+]
+
 
 [project.urls]
 Home = "https://github.com/paavopere/palabras"
