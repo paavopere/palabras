@@ -39,6 +39,8 @@ Install the package from current directory with `[test]` dependencies in editabl
 pip install -e '.[test]'
 ```
 
+### Checks
+
 Run tests:
 
 ```
@@ -46,3 +48,8 @@ pytest --cov --cov-report=term-missing
 ```
 
 All tests should pass and coverage should be 100%.
+
+Run type checks:
+```
+mypy palabras --install-types --ignore-missing-imports
+```
