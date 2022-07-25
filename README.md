@@ -31,11 +31,12 @@ git clone git@github.com:paavopere/palabras.git
 cd palabras
 ```
 
-Or start from here if you already got the repo and are in the root directory `palabras`:
+Or start from here 👇 if you already got the repo and are in the root directory `palabras`.
+
+Install the package from current directory with `[test]` dependencies in editable mode (`-e`):
 
 ```
-pip install -e
-pip install pytest-cov pytest-mock
+pip install -e '.[test]'
 ```
 
 Run tests:
@@ -44,4 +45,4 @@ Run tests:
 pytest --cov --cov-report=term-missing
 ```
 
-All tests should pass and coverage should be 100%. If not, I apologize for my failure.
+All tests should pass and coverage should be 100%.
