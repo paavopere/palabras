@@ -254,7 +254,7 @@ def test_get_subsections_len_and_type():
 
 
 def test_get_subsections_titles():
-    page = WiktionaryPage('empleado')
+    page = WiktionaryPage('empleado', revision=68396093)
     section = page.get_spanish_section()
     subsections = section.get_subsections()
     titles = [ss.title for ss in subsections]
@@ -263,7 +263,7 @@ def test_get_subsections_titles():
         'Pronunciation',
         'Adjective',
         'Noun',
-        'Verb',
+        'Participle',
         'Further reading'
     ]
     
