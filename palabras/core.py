@@ -179,7 +179,15 @@ class Subsection(WiktionaryPageSection):
         return self.soup.find(class_='mw-headline').text
     
     def content_string(self) -> str:
-        raise NotImplementedError
+        cs = ''
+        for c in self.soup.contents:
+            if c.name == 'p':
+                cs += c.text
+            if c.name == 'ol':
+                cs += f'- {c.text}'
+        cs += '\n'
+        return cs
+
 
 
 def get_word_info(word: str, revision: Optional[int] = None):
