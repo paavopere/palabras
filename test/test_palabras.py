@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import WiktionaryPage, WordInfo, get_siblings_until, request_url_text
+from palabras.core import Subsection, WiktionaryPage, WordInfo, get_heading_siblings_on_level, get_siblings_until, request_url_text
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
@@ -241,4 +241,83 @@ def test_page_object_attributes():
     page = WiktionaryPage(word, revision)
     assert page.word == word
     assert page.revision == revision
+
+
+def test_get_subsections_len_and_type():
+    page = WiktionaryPage('empleado')
+    section = page.get_spanish_section()
+    subsections = section.get_subsections()
+    assert len(subsections) > 0  # this page has sections
+    for subsection in subsections:
+        assert isinstance(subsection, Subsection)
+
+
+def test_get_subsections_titles():
+    page = WiktionaryPage('empleado', revision=68396093)
+    section = page.get_spanish_section()
+    subsections = section.get_subsections()
+    titles = [ss.title for ss in subsections]
+    assert titles == [
+        'Etymology',
+        'Pronunciation',
+        'Adjective',
+        'Noun',
+        'Participle',
+        'Further reading'
+    ]
     
+    
+def test_get_specific_subsection():
+    page = WiktionaryPage('empleado')
+    section = page.get_spanish_section()
+    subsection_adjective = section.get_subsection('Adjective')
+    assert isinstance(subsection_adjective, Subsection)
+    assert subsection_adjective.title == 'Adjective'
+    
+    
+def test_get_nonexistent_subsection():
+    page = WiktionaryPage('empleado')
+    section = page.get_spanish_section()
+    with pytest.raises(KeyError, match='No section with title:'):
+        section.get_subsection('Nonexistent section')
+        
+        
+def test_adjective_subsection_content_string():
+    page = WiktionaryPage('empleado')
+    expected = dedent('''
+        empleado (feminine empleada, masculine plural empleados, feminine plural empleadas)
+        - employed
+    ''').lstrip()
+    ss = page.get_spanish_section().get_subsection('Adjective')
+    assert ss.content_string() == expected
+        
+        
+def test_get_heading_siblings_on_level():
+    soup = BeautifulSoup(
+        '<h1>tag 1</h1>'
+        '<h2>tag 2</h2>'
+        '<h3>tag 3</h3>'
+        '<p>tag 4</p>'
+        '<h3>tag 5</h3>'
+        '<h2>tag 6</h2>',
+        features='html.parser'
+    )
+    element = soup.h2  # find the first h2
+    # should find 2,3,4,5
+    assert len(get_heading_siblings_on_level(element)) == 4
+    
+    element = soup.h3 # find the first h3
+    # should find 3,4
+    assert len(get_heading_siblings_on_level(element)) == 2
+
+
+def test_get_siblings_on_level_error_on_unexpected_element():
+    soup = BeautifulSoup(
+        '<h1>one</h1>'
+        '<li>get_siblings_on_level</li>'
+        '<li>only works for headings</li>',
+        features='html.parser'
+    )
+    element = soup.li
+    with pytest.raises(ValueError):
+        get_heading_siblings_on_level(element)

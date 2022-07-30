@@ -84,7 +84,7 @@ def _language_section_tags(page_soup: BeautifulSoup, language: str) -> List[Page
         **PageElement**s
     """
     start_tag = _language_section_start_tag(page_soup, language)
-    return get_siblings_until(start_tag, ['h1', 'h2'])
+    return get_heading_siblings_on_level(start_tag)
     
     
 def _language_section_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.Tag:
@@ -117,6 +117,20 @@ class WiktionaryPageSection:
 
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
+    
+    def get_subsections(self, level='h3') -> List[Subsection]:
+        subheadings = self.soup.find_all(level)
+        tag_sets = [get_heading_siblings_on_level(sh) for sh in subheadings]
+        subsoups = [tags_to_soup(tags) for tags in tag_sets]
+        return [Subsection(subsoup) for subsoup in subsoups]
+    
+    def get_subsection(self, title, *, level='h3') -> Subsection:
+        subsections = self.get_subsections(level=level)
+        for ss in subsections:
+            if ss.title == title:
+                return ss
+        else:
+            raise KeyError(f'No section with title: {title}')
 
     def definitions(self) -> List[str]:
         definitions_ = []
@@ -159,6 +173,23 @@ class WiktionaryPageSection:
         return str_
 
 
+class Subsection(WiktionaryPageSection):
+    @property
+    def title(self):
+        return self.soup.find(class_='mw-headline').text
+    
+    def content_string(self) -> str:
+        cs = ''
+        for c in self.soup.contents:
+            if c.name == 'p':
+                cs += c.text
+            if c.name == 'ol':
+                cs += f'- {c.text}'
+        cs += '\n'
+        return cs
+
+
+
 def get_word_info(word: str, revision: Optional[int] = None):
     return WordInfo.from_search(word=word, revision=revision)
 
@@ -178,6 +209,20 @@ def tags_to_soup(tags: Sequence[bs4.Tag],
     for element in tags:
         soup.append(copy(element))
     return soup
+
+
+def get_heading_siblings_on_level(element):
+    """
+    Return a list of sibling elements until the next occurrence of a heading on the same 
+    or higher level.
+    """
+    hierarchy = 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+    if element.name not in hierarchy:
+        raise ValueError(
+            f'Element with {element.name} (expected one of {hierarchy})')
+    
+    same_and_higher = hierarchy[:hierarchy.index(element.name) + 1]
+    return get_siblings_until(element, same_and_higher)
 
 
 def get_siblings_until(element: PageElement,
