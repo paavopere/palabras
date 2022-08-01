@@ -334,3 +334,10 @@ def test_section_repr():
     page = WiktionaryPage('empleado')
     section = page.get_section('Spanish')
     assert repr(section) == "<WiktionaryPage('empleado') → 'Spanish'>"
+
+
+def test_subsection_repr():
+    page = WiktionaryPage('ser')
+    section = page.get_section('Spanish')
+    subsection = section.get_subsection('Verb')
+    assert repr(subsection) == "<WiktionaryPage('ser') → 'Spanish' → 'Verb'>"

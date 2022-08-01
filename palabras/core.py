@@ -70,7 +70,7 @@ class WiktionaryPage:
     def get_section(self, language: str):
         return WiktionaryPageSection(
             soup=_extract_language_section(self.soup, language=language),
-            parent=self
+            page=self
         )
     
 
@@ -105,14 +105,15 @@ def _language_section_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.
 
 class WiktionaryPageSection:
 
-    def __init__(self, soup: BeautifulSoup, parent=None):
+    # TODO clear up the hierarchy and inheritance between WiktionaryPageSection and Subsection.
+    
+    def __init__(self, soup: BeautifulSoup, page: Optional[WiktionaryPage] = None):
         # self.title = title
-        self.parent = parent
+        self.page = page
         self.soup = self._clean_soup(soup)
         
     def __repr__(self):
-        return f'<{self.parent!r} → {self.title!r}>'
-    
+        return f'<{self.page!r} → {self.title!r}>'
     
     @property
     def title(self):
@@ -139,7 +140,7 @@ class WiktionaryPageSection:
         subheadings = self.soup.find_all(level)
         tag_sets = [get_heading_siblings_on_level(sh) for sh in subheadings]
         subsoups = [tags_to_soup(tags) for tags in tag_sets]
-        return [Subsection(subsoup) for subsoup in subsoups]
+        return [Subsection(parent=self, soup=subsoup) for subsoup in subsoups]
     
     def get_subsection(self, title, *, level='h3') -> Subsection:
         subsections = self.get_subsections(level=level)
@@ -191,9 +192,12 @@ class WiktionaryPageSection:
 
 
 class Subsection(WiktionaryPageSection):
-    @property
-    def title(self):
-        return self.soup.find(class_='mw-headline').text
+    def __init__(self, parent: WiktionaryPageSection, soup: BeautifulSoup):
+        self.parent = parent
+        self.soup = self._clean_soup(soup)
+        
+    def __repr__(self):
+        return f'<{self.parent.page!r} → {self.parent.title!r} → {self.title!r}>'
     
     def content_string(self) -> str:
         cs = ''
