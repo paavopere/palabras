@@ -69,7 +69,8 @@ class WiktionaryPage:
     
     def get_section(self, language: str):
         return WiktionaryPageSection(
-            soup=_extract_language_section(self.soup, language=language)
+            soup=_extract_language_section(self.soup, language=language),
+            parent=self
         )
     
 
@@ -104,8 +105,18 @@ def _language_section_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.
 
 class WiktionaryPageSection:
 
-    def __init__(self, soup: BeautifulSoup):
+    def __init__(self, soup: BeautifulSoup, parent=None):
+        # self.title = title
+        self.parent = parent
         self.soup = self._clean_soup(soup)
+        
+    def __repr__(self):
+        return f'<{self.parent!r} → {self.title!r}>'
+    
+    
+    @property
+    def title(self):
+        return self.soup.find(class_='mw-headline').text
 
     @staticmethod
     def _clean_soup(soup: BeautifulSoup):

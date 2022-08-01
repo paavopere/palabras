@@ -324,8 +324,13 @@ def test_get_siblings_on_level_error_on_unexpected_element():
         
         
 def test_page_repr():
-    page = WiktionaryPage('empleado')
     assert repr(WiktionaryPage('empleado')) \
         == "WiktionaryPage('empleado')"
     assert repr(WiktionaryPage('empleado', revision=62175311)) \
         == "WiktionaryPage('empleado', revision=62175311)"
+
+
+def test_section_repr():
+    page = WiktionaryPage('empleado')
+    section = page.get_section('Spanish')
+    assert repr(section) == "<WiktionaryPage('empleado') → 'Spanish'>"
