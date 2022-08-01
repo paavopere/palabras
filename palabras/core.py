@@ -43,6 +43,12 @@ class WiktionaryPage:
             markup=self.get_page_html(word, revision), 
             features='html.parser'
         )
+        
+    def __repr__(self):
+        if self.revision is None:
+            return f'{self.__class__.__name__}({self.word!r})'
+        else:
+            return f'{self.__class__.__name__}({self.word!r}, revision={self.revision!r})'
     
     @staticmethod
     def get_page_html(word, revision=None):

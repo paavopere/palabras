@@ -321,3 +321,11 @@ def test_get_siblings_on_level_error_on_unexpected_element():
     element = soup.li
     with pytest.raises(ValueError):
         get_heading_siblings_on_level(element)
+        
+        
+def test_page_repr():
+    page = WiktionaryPage('empleado')
+    assert repr(WiktionaryPage('empleado')) \
+        == "WiktionaryPage('empleado')"
+    assert repr(WiktionaryPage('empleado', revision=62175311)) \
+        == "WiktionaryPage('empleado', revision=62175311)"
