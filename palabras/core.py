@@ -8,8 +8,6 @@ import bs4
 from bs4 import BeautifulSoup
 from bs4.element import PageElement
 
-WiktionaryPageStr = str  # TODO remove this and implement WiktionaryPage instead
-
 
 class WiktionaryPageNotFound(LookupError):
     pass
