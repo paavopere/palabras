@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from copy import copy
 from dataclasses import dataclass, field
-from typing import Container, Iterable, List, Optional, Sequence, Union
+from inspect import Attribute
+from typing import Container, List, Optional, Sequence, Union
 import requests
 import bs4
 from bs4 import BeautifulSoup
 from bs4.element import PageElement
+
+
+Definition = str  # TODO make a class out of this, with ability to carry extra info like synonyms
 
 
 class WiktionaryPageNotFound(LookupError):
@@ -124,10 +128,10 @@ class WiktionaryPageSection:
         for e in soup.find_all(class_='wiktQuote'):
             e.parent.decompose()
 
-        # remove nested lists from definition list items
-        for li in WiktionaryPageSection._definition_list_items_from_soup(soup):
-            for e in li.find_all('ul'):
-                e.decompose()
+        # # remove nested lists from definition list items
+        # for li in WiktionaryPageSection._definition_list_items_from_soup(soup):
+        #     for e in li.find_all('ul'):
+        #         e.decompose()
 
         return soup
 
@@ -147,8 +151,35 @@ class WiktionaryPageSection:
                 return ss
         else:
             raise KeyError(f'No section with title: {title}')
+    
+    def definitions(self):
+        definitions_ = []
+        for sub in self.get_subsections():
+            definitions_.extend(sub.definitions())
+        return definitions_
 
-    def definitions(self) -> List[str]:
+
+class Subsection(WiktionaryPageSection):
+    def __init__(self, parent: WiktionaryPageSection, soup: BeautifulSoup):
+        self.parent = parent
+        if not isinstance(parent, WiktionaryPageSection) or isinstance(parent, Subsection):
+            raise TypeError('parent has to be WiktionaryPageSection and cannot be Subsection')
+        self.soup = self._clean_soup(soup)
+        
+    def __repr__(self):
+        return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
+    
+    def content_string(self) -> str:
+        cs = ''
+        for c in self.soup.contents:
+            if c.name == 'p':
+                cs += c.text
+            if c.name == 'ol':
+                cs += f'- {c.text}'
+        cs += '\n'
+        return cs
+    
+    def definitions(self):
         definitions_ = []
         for definition_list_item in self._definition_list_items():
             definitions_.append(
@@ -187,27 +218,7 @@ class WiktionaryPageSection:
                 str_ += ''.join(element.strings)
         str_ = str_.replace('\n', '')
         return str_
-
-
-class Subsection(WiktionaryPageSection):
-    def __init__(self, parent: WiktionaryPageSection, soup: BeautifulSoup):
-        self.parent = parent
-        self.soup = self._clean_soup(soup)
         
-    def __repr__(self):
-        return f'<{self.parent.page!r} → {self.parent.title!r} → {self.title!r}>'
-    
-    def content_string(self) -> str:
-        cs = ''
-        for c in self.soup.contents:
-            if c.name == 'p':
-                cs += c.text
-            if c.name == 'ol':
-                cs += f'- {c.text}'
-        cs += '\n'
-        return cs
-
-
 
 def get_word_info(word: str, revision: Optional[int] = None):
     return WordInfo.from_search(word=word, revision=revision)
