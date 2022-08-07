@@ -179,19 +179,18 @@ class Subsection(WiktionaryPageSection):
         cs += '\n'
         return cs
     
-    def definitions(self):
+    def definitions(self) -> List[Definition]:
         definitions_ = []
         for definition_list_item in self._definition_list_items():
             definitions_.append(
                 self.definition_list_item_to_str(definition_list_item))
         return definitions_
 
-    # TODO remove
-    def _definition_list_items(self):
+    def _definition_list_items(self) -> List[bs4.Tag]:
         return self._definition_list_items_from_soup(self.soup)
 
     @staticmethod
-    def _definition_list_items_from_soup(soup: BeautifulSoup):        
+    def _definition_list_items_from_soup(soup: BeautifulSoup) -> List[bs4.Tag]:        
         dlis = []
         for ol in soup.find_all('ol', recursive=False):
             for child in ol.find_all('li', recursive=False):
@@ -203,12 +202,11 @@ class Subsection(WiktionaryPageSection):
         """
         Parse the contents of the given definition `li` tag.
         """
-        str_ = ''
-        for element in li.contents:
-            if element.name != 'dl':  #  exclude usage examples and synonyms (etc.?), which are under <dl>
-                str_ += ''.join(element.strings)
-        str_ = str_.replace('\n', '')
-        return str_
+        res = []
+        for e in li.children:
+            if e.name not in ('dl', 'ul'):  #  exclude nested stuff
+                res.append(e.get_text())
+        return ''.join(res).strip()
         
 
 def get_word_info(word: str, revision: Optional[int] = None):

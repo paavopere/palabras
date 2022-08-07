@@ -163,8 +163,6 @@ def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
         assert exitcode == 0
     
 
-# TODO fix this test in Subsection parsing
-@pytest.mark.xfail
 def test_cli_ser(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['ser']
     exitcode = palabras.cli.main(args)
