@@ -191,21 +191,12 @@ class Subsection(WiktionaryPageSection):
         return self._definition_list_items_from_soup(self.soup)
 
     @staticmethod
-    def _definition_list_items_from_soup(soup):
-        headwords = soup.find_all(class_='headword')
-
-        # a bunch of `ol`s that contain a number of definition list items
-        definition_lists = [
-            hw.parent.find_next_sibling('ol') for hw in headwords
-        ]
-
-        # a bunch of `li`s that contain one definition "line"
-        definition_list_items = []
-        for dl in definition_lists:
-            for dli in dl.find_all('li'):
-                definition_list_items.append(dli)
-
-        return definition_list_items
+    def _definition_list_items_from_soup(soup: BeautifulSoup):        
+        dlis = []
+        for ol in soup.find_all('ol', recursive=False):
+            for child in ol.find_all('li', recursive=False):
+                dlis.append(child)
+        return dlis
 
     @staticmethod
     def definition_list_item_to_str(li: bs4.Tag) -> str:
