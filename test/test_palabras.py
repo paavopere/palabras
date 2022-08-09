@@ -67,6 +67,16 @@ def test_page_equalities(mocked_request_url_text):
     assert wp_with_revision != wp_with_revision_other
 
 
+def test_eqs_with_other_types(mocked_request_url_text):
+    word = 'olvidar'
+    page = WiktionaryPage(word)
+    section = page.get_section('Spanish')
+    wi = WordInfo(section)
+    assert page != 'foo'
+    assert section != 'foo'
+    assert wi != 'foo'
+
+
 def test_get_wiktionary_page_nonexistent(mocked_request_url_text):
     word = 'thispageaintexistent'
     with pytest.raises(palabras.core.WiktionaryPageNotFound):
@@ -152,7 +162,6 @@ def test_lookup_different_definitions_in_history(mocked_request_url_text):
         == expected_definitions_2
 
 
-@pytest.mark.xfail
 def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['olvidar']
     palabras.cli.main(args)
@@ -179,7 +188,6 @@ def test_cli_compact(capsys: pytest.CaptureFixture, mocked_request_url_text):
     assert captured.out == expected
 
 
-@pytest.mark.xfail
 def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args1 = ['olvidar', '-r', '62345284']
     args2 = ['olvidar', '--revision', '62345284']
@@ -199,7 +207,6 @@ def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
         assert exitcode == 0
 
 
-@pytest.mark.xfail
 def test_cli_ser(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['ser']
     exitcode = palabras.cli.main(args)

@@ -43,7 +43,12 @@ class WordInfo:
         Human-readable multiline string with all definitions listed under its
         corresponding part of speech
         """
-        raise NotImplementedError
+        outputs = []
+        for subsection in self.page_section.get_subsections():
+            if len(subsection.definitions()) > 0:
+                sub_output = f'{subsection.title}: {subsection.content_string()}'
+                outputs.append(sub_output)
+        return '\n\n'.join(outputs)
 
     def compact_definition_output(self) -> str:
         """
@@ -198,6 +203,7 @@ class Subsection(WiktionaryPageSection):
     def __repr__(self):
         return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
 
+    # TODO remove
     def content_string(self) -> str:
         """
         Render contents as a human-readable string.
@@ -205,10 +211,9 @@ class Subsection(WiktionaryPageSection):
         lines = []
         p = self.soup.p
         if p:
-            lines.append(self.soup.p.get_text().strip())
+            lines.append(standardize_spaces(self.soup.p.get_text().strip()))
         for definition in self.definitions():
             lines.append(f'- {definition}')
-        lines.append('')  # add with empty line
         return '\n'.join(lines)
 
     def definitions(self) -> List[Definition]:
@@ -298,3 +303,8 @@ def get_siblings_until(element: PageElement,
         else:
             found.append(sibling)
     return found
+
+
+def standardize_spaces(s: str) -> str:
+    """Replace non-breaking space U+00a0 with a space"""
+    return s.replace('\u00a0', ' ')
