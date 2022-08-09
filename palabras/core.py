@@ -34,6 +34,17 @@ class WordInfo:
     def definition_strings(self):
         return self.page_section.definitions()
 
+    def compact_definition_str(self) -> str:
+        """
+        Human-readable multiline string with word and all definitions listed one after one another
+        """
+        definitions_with_bullet = [
+            f'- {dl}'
+            for dl in self.page_section.definitions()
+        ]
+        lines = [self.word] + definitions_with_bullet
+        return '\n'.join(lines)
+
     @property
     def word(self):
         return self.page_section.page.word

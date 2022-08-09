@@ -23,7 +23,8 @@ def main(args):
     args = parser.parse_args(args)
 
     try:
-        print(parse(WordInfo.from_search(args.word, revision=args.revision)))
+        word_info = WordInfo.from_search(args.word, revision=args.revision)
+        print(parse(word_info))
         return 0
     except (WiktionaryPageNotFound, WiktionarySectionNotFound) as exc:
         print(exc)
@@ -31,6 +32,4 @@ def main(args):
 
 
 def parse(word_info: WordInfo) -> str:
-    lines = [word_info.word]
-    lines += [f'- {ds}' for ds in word_info.definition_strings]
-    return '\n'.join(lines)
+    return word_info.compact_definition_str()
