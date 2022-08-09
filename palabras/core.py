@@ -84,7 +84,9 @@ class WiktionaryPage:
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
 
-    def __eq__(self, other: WiktionaryPage) -> bool:
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
         return (
             self.word == other.word
             and self.revision == other.revision
@@ -149,7 +151,9 @@ class WiktionaryPageSection:
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
 
-    def __eq__(self, other: WiktionaryPageSection):
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
         return (
             self.page == other.page
             and self.soup == other.soup
