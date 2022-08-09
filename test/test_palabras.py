@@ -9,7 +9,9 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import Subsection, WiktionaryPage, WordInfo, get_heading_siblings_on_level, get_siblings_until, request_url_text
+from palabras.core import (
+    Subsection, WiktionaryPage, WordInfo, get_heading_siblings_on_level, get_siblings_until
+)
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
@@ -130,7 +132,7 @@ def test_lookup_different_definitions_in_history(mocked_request_url_text):
     assert palabras.core.get_word_info(word, revision=revision_2).definition_strings \
         == expected_definitions_2
 
-    
+
 def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['olvidar']
     palabras.cli.main(args)
@@ -142,26 +144,26 @@ def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
         - (with de, reflexive, intransitive) to forget, to leave behind
     ''').lstrip()
     assert captured.out == expected
-    
+
 
 def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args1 = ['olvidar', '-r', '62345284']
     args2 = ['olvidar', '--revision', '62345284']
     args3 = ['olvidar', '--revision=62345284']
-    
+
     expected = dedent('''
         olvidar
         - to forget; to elude, escape (be forgotten by)
         - (reflexive) to forget
         - (reflexive) to leave behind
     ''').lstrip()
-    
+
     for args in args1, args2, args3:
         exitcode = palabras.cli.main(args)
         captured = capsys.readouterr()
         assert captured.out == expected
         assert exitcode == 0
-    
+
 
 def test_cli_ser(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['ser']
@@ -178,7 +180,7 @@ def test_cli_ser(capsys: pytest.CaptureFixture, mocked_request_url_text):
     ''').lstrip()
     assert captured.out == expected
     assert exitcode == 0
-    
+
 
 def test_cli_nonexistent_page(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['asdasdasd']
@@ -187,7 +189,7 @@ def test_cli_nonexistent_page(capsys: pytest.CaptureFixture, mocked_request_url_
     expected = 'No Wiktionary page found\n'
     assert captured.out == expected
     assert exitcode == 1
-    
+
 
 def test_cli_non_spanish_section(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['moikka']
@@ -216,25 +218,25 @@ def test_get_next_siblings_until():
     assert len(get_siblings_until(tag, 'h2')) == 2  # hello ... hello again
     assert len(get_siblings_until(tag, 'h1')) == 4  # hello ... hello 2
     assert len(get_siblings_until(tag, 'nope')) == 9  # all tags
-    
+
     tag2 = soup.find_all('h1')[1]
     assert len(get_siblings_until(tag2, 'h1')) == 4  # hello 2 ... bar 2
     assert len(get_siblings_until(tag2, 'nope')) == 5  # hello 2 ... hello 3
-    
-    
+
+
 def test_page_object(mocked_request_url_text):
     word = 'ser'
     page = WiktionaryPage(word)
     assert isinstance(page, WiktionaryPage)
-    
-    
+
+
 def test_page_object_from_word_and_revision(mocked_request_url_text):
     word = 'empleado'
     revision = 62175311
     page = WiktionaryPage(word, revision)
     assert isinstance(page, WiktionaryPage)
-    
-    
+
+
 def test_page_object_attributes(mocked_request_url_text):
     word = 'empleado'
     revision = 62175311
@@ -265,23 +267,23 @@ def test_get_subsections_titles(mocked_request_url_text):
         'Participle',
         'Further reading'
     ]
-    
-    
+
+
 def test_get_specific_subsection(mocked_request_url_text):
     page = WiktionaryPage('empleado')
     section = page.get_spanish_section()
     subsection_adjective = section.get_subsection('Adjective')
     assert isinstance(subsection_adjective, Subsection)
     assert subsection_adjective.title == 'Adjective'
-    
-    
+
+
 def test_get_nonexistent_subsection(mocked_request_url_text):
     page = WiktionaryPage('empleado')
     section = page.get_spanish_section()
     with pytest.raises(KeyError, match='No section with title:'):
         section.get_subsection('Nonexistent section')
-        
-        
+
+
 def test_adjective_subsection_content_string(mocked_request_url_text):
     page = WiktionaryPage('empleado')
     expected = dedent('''
@@ -290,8 +292,8 @@ def test_adjective_subsection_content_string(mocked_request_url_text):
     ''').lstrip()
     ss = page.get_spanish_section().get_subsection('Adjective')
     assert ss.content_string() == expected
-        
-        
+
+
 def test_get_heading_siblings_on_level():
     soup = BeautifulSoup(
         '<h1>tag 1</h1>'
@@ -305,8 +307,8 @@ def test_get_heading_siblings_on_level():
     element = soup.h2  # find the first h2
     # should find 2,3,4,5
     assert len(get_heading_siblings_on_level(element)) == 4
-    
-    element = soup.h3 # find the first h3
+
+    element = soup.h3  # find the first h3
     # should find 3,4
     assert len(get_heading_siblings_on_level(element)) == 2
 
@@ -321,8 +323,8 @@ def test_get_siblings_on_level_error_on_unexpected_element():
     element = soup.li
     with pytest.raises(ValueError):
         get_heading_siblings_on_level(element)
-        
-        
+
+
 def test_page_repr(mocked_request_url_text):
     assert repr(WiktionaryPage('empleado')) \
         == "WiktionaryPage('empleado')"
@@ -346,14 +348,14 @@ def test_subsection_repr(mocked_request_url_text):
 def test_subsection_raises_on_invalid_parent():
     placeholder_soup = BeautifulSoup('<a>foo</a>', features='html.parser')
     page = WiktionaryPage('ser')
-    
+
     # get a valid subsection from the page
     ok_subsection = page.get_section('Spanish').get_subsections()[0]
-    
+
     # parent cannot be a Subsection object
     with pytest.raises(TypeError):
         Subsection(parent=ok_subsection, soup=placeholder_soup)
-        
+
     # parent cannot be None
     with pytest.raises(TypeError):
         Subsection(parent=None, soup=placeholder_soup)

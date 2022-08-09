@@ -18,7 +18,11 @@ jobs:
         python -m pip install pip~=22.1
         python -m pip install -e '.[test]'
     - name: pytest
-      run: pytest --cov --cov-report=term-missing
+      run: |
+        pytest --cov --cov-report=term-missing
     - name: mypy
       run: |
         mypy palabras --ignore-missing-imports
+    - name: flake8
+      run: |
+        flake8
