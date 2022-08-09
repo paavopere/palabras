@@ -128,11 +128,6 @@ class WiktionaryPageSection:
         for e in soup.find_all(class_='wiktQuote'):
             e.parent.decompose()
 
-        # # remove nested lists from definition list items
-        # for li in WiktionaryPageSection._definition_list_items_from_soup(soup):
-        #     for e in li.find_all('ul'):
-        #         e.decompose()
-
         return soup
 
     def __contains__(self, other: str) -> bool:
@@ -170,16 +165,22 @@ class Subsection(WiktionaryPageSection):
         return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
     
     def content_string(self) -> str:
-        cs = ''
-        for c in self.soup.contents:
-            if c.name == 'p':
-                cs += c.text
-            if c.name == 'ol':
-                cs += f'- {c.text}'
-        cs += '\n'
-        return cs
+        """
+        Render contents as a human-readable string.
+        """
+        lines = []
+        p = self.soup.p
+        if p:
+            lines.append(self.soup.p.get_text().strip())
+        for definition in self.definitions():
+            lines.append(f'- {definition}')
+        lines.append('')  # add with empty line
+        return '\n'.join(lines)
     
     def definitions(self) -> List[Definition]:
+        """
+        Parse definitions from soup and return them as a list of strings.
+        """
         definitions_ = []
         for definition_list_item in self._definition_list_items():
             definitions_.append(
@@ -190,7 +191,10 @@ class Subsection(WiktionaryPageSection):
         return self._definition_list_items_from_soup(self.soup)
 
     @staticmethod
-    def _definition_list_items_from_soup(soup: BeautifulSoup) -> List[bs4.Tag]:        
+    def _definition_list_items_from_soup(soup: BeautifulSoup) -> List[bs4.Tag]:  
+        """
+        Extract <li> tags that contain definitions
+        """      
         dlis = []
         for ol in soup.find_all('ol', recursive=False):
             for child in ol.find_all('li', recursive=False):
