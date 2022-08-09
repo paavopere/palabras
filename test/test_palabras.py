@@ -23,7 +23,7 @@ def mocked_request_url_text(mocker: MockerFixture):
     """
     with open(MOCK_CACHE_FILE_PATH) as fp:
         mock_cache: dict = json.load(fp)['url_contents']
-    mocker.patch('palabras.core.request_url_text', side_effect=mock_cache.get)
+    mocker.patch('palabras.core.request_url_text', side_effect=lambda url: mock_cache[url])
 
 
 def test_get_word_info_return_type(mocked_request_url_text):
@@ -89,7 +89,7 @@ def test_definition_list_item_to_str(mocked_request_url_text):
     li = BeautifulSoup('''
     <li>parse <a href="foo">this</a><dl><dd><span>Whatever</span>...</dd></dl></li>
     ''', features='html.parser').li
-    str_definition = palabras.core.WiktionaryPageSection.definition_list_item_to_str(li)
+    str_definition = palabras.core.Subsection.definition_list_item_to_str(li)
     assert str_definition == 'parse this'
 
 
@@ -222,20 +222,20 @@ def test_get_next_siblings_until():
     assert len(get_siblings_until(tag2, 'nope')) == 5  # hello 2 ... hello 3
     
     
-def test_page_object():
+def test_page_object(mocked_request_url_text):
     word = 'ser'
     page = WiktionaryPage(word)
     assert isinstance(page, WiktionaryPage)
     
     
-def test_page_object_from_word_and_revision():
+def test_page_object_from_word_and_revision(mocked_request_url_text):
     word = 'empleado'
     revision = 62175311
     page = WiktionaryPage(word, revision)
     assert isinstance(page, WiktionaryPage)
     
     
-def test_page_object_attributes():
+def test_page_object_attributes(mocked_request_url_text):
     word = 'empleado'
     revision = 62175311
     page = WiktionaryPage(word, revision)
@@ -243,7 +243,7 @@ def test_page_object_attributes():
     assert page.revision == revision
 
 
-def test_get_subsections_len_and_type():
+def test_get_subsections_len_and_type(mocked_request_url_text):
     page = WiktionaryPage('empleado')
     section = page.get_spanish_section()
     subsections = section.get_subsections()
@@ -252,7 +252,7 @@ def test_get_subsections_len_and_type():
         assert isinstance(subsection, Subsection)
 
 
-def test_get_subsections_titles():
+def test_get_subsections_titles(mocked_request_url_text):
     page = WiktionaryPage('empleado', revision=68396093)
     section = page.get_spanish_section()
     subsections = section.get_subsections()
@@ -267,7 +267,7 @@ def test_get_subsections_titles():
     ]
     
     
-def test_get_specific_subsection():
+def test_get_specific_subsection(mocked_request_url_text):
     page = WiktionaryPage('empleado')
     section = page.get_spanish_section()
     subsection_adjective = section.get_subsection('Adjective')
@@ -275,14 +275,14 @@ def test_get_specific_subsection():
     assert subsection_adjective.title == 'Adjective'
     
     
-def test_get_nonexistent_subsection():
+def test_get_nonexistent_subsection(mocked_request_url_text):
     page = WiktionaryPage('empleado')
     section = page.get_spanish_section()
     with pytest.raises(KeyError, match='No section with title:'):
         section.get_subsection('Nonexistent section')
         
         
-def test_adjective_subsection_content_string():
+def test_adjective_subsection_content_string(mocked_request_url_text):
     page = WiktionaryPage('empleado')
     expected = dedent('''
         empleado (feminine empleada, masculine plural empleados, feminine plural empleadas)
@@ -321,3 +321,39 @@ def test_get_siblings_on_level_error_on_unexpected_element():
     element = soup.li
     with pytest.raises(ValueError):
         get_heading_siblings_on_level(element)
+        
+        
+def test_page_repr(mocked_request_url_text):
+    assert repr(WiktionaryPage('empleado')) \
+        == "WiktionaryPage('empleado')"
+    assert repr(WiktionaryPage('empleado', revision=62175311)) \
+        == "WiktionaryPage('empleado', revision=62175311)"
+
+
+def test_section_repr(mocked_request_url_text):
+    page = WiktionaryPage('empleado')
+    section = page.get_section('Spanish')
+    assert repr(section) == "<WiktionaryPage('empleado') → 'Spanish'>"
+
+
+def test_subsection_repr(mocked_request_url_text):
+    page = WiktionaryPage('ser')
+    section = page.get_section('Spanish')
+    subsection = section.get_subsection('Verb')
+    assert repr(subsection) == "<WiktionaryPage('ser') → 'Spanish' → 'Verb'>"
+
+
+def test_subsection_raises_on_invalid_parent():
+    placeholder_soup = BeautifulSoup('<a>foo</a>', features='html.parser')
+    page = WiktionaryPage('ser')
+    
+    # get a valid subsection from the page
+    ok_subsection = page.get_section('Spanish').get_subsections()[0]
+    
+    # parent cannot be a Subsection object
+    with pytest.raises(TypeError):
+        Subsection(parent=ok_subsection, soup=placeholder_soup)
+        
+    # parent cannot be None
+    with pytest.raises(TypeError):
+        Subsection(parent=None, soup=placeholder_soup)
