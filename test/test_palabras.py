@@ -152,8 +152,22 @@ def test_lookup_different_definitions_in_history(mocked_request_url_text):
         == expected_definitions_2
 
 
+@pytest.mark.xfail
 def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['olvidar']
+    palabras.cli.main(args)
+    captured = capsys.readouterr()
+    expected = dedent('''
+        Verb: olvidar (first-person singular present olvido, first-person singular preterite olvidé, past participle olvidado)
+        - (transitive) to forget (be forgotten by)
+        - (reflexive, intransitive) to forget, elude, escape
+        - (with de, reflexive, intransitive) to forget, to leave behind
+    ''').lstrip()  # noqa: E501
+    assert captured.out == expected
+
+
+def test_cli_compact(capsys: pytest.CaptureFixture, mocked_request_url_text):
+    args = ['olvidar', '--compact']
     palabras.cli.main(args)
     captured = capsys.readouterr()
     expected = dedent('''
@@ -165,17 +179,18 @@ def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
     assert captured.out == expected
 
 
+@pytest.mark.xfail
 def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args1 = ['olvidar', '-r', '62345284']
     args2 = ['olvidar', '--revision', '62345284']
     args3 = ['olvidar', '--revision=62345284']
 
     expected = dedent('''
-        olvidar
+        Verb: olvidar (first-person singular present olvido, first-person singular preterite olvidé, past participle olvidado)
         - to forget; to elude, escape (be forgotten by)
         - (reflexive) to forget
         - (reflexive) to leave behind
-    ''').lstrip()
+    ''').lstrip()  # noqa: E501
 
     for args in args1, args2, args3:
         exitcode = palabras.cli.main(args)
@@ -184,8 +199,28 @@ def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
         assert exitcode == 0
 
 
+@pytest.mark.xfail
 def test_cli_ser(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['ser']
+    exitcode = palabras.cli.main(args)
+    captured = capsys.readouterr()
+    expected = dedent('''
+        Verb: ser (first-person singular present soy, first-person singular preterite fui, past participle sido)
+        - to be (essentially or identified as)
+        - to be (in the passive voice sense)
+        - to exist; to occur
+
+        Noun: ser m (plural seres)
+        - a being, organism
+        - nature, essence
+        - value, worth
+    ''').lstrip()  # noqa: E501
+    assert captured.out == expected
+    assert exitcode == 0
+
+
+def test_cli_ser_compact(capsys: pytest.CaptureFixture, mocked_request_url_text):
+    args = ['ser', '--compact']
     exitcode = palabras.cli.main(args)
     captured = capsys.readouterr()
     expected = dedent('''

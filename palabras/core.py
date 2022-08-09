@@ -31,12 +31,24 @@ class WordInfo:
         return cls(page_section=section)
 
     @property
+    def word(self):
+        return self.page_section.page.word
+
+    @property
     def definition_strings(self):
         return self.page_section.definitions()
 
-    def compact_definition_str(self) -> str:
+    def definition_output(self) -> str:
         """
-        Human-readable multiline string with word and all definitions listed one after one another
+        Human-readable multiline string with all definitions listed under its
+        corresponding part of speech
+        """
+        raise NotImplementedError
+
+    def compact_definition_output(self) -> str:
+        """
+        Human-readable multiline string with word and all definitions listed
+        one after one another
         """
         definitions_with_bullet = [
             f'- {dl}'
@@ -44,10 +56,6 @@ class WordInfo:
         ]
         lines = [self.word] + definitions_with_bullet
         return '\n'.join(lines)
-
-    @property
-    def word(self):
-        return self.page_section.page.word
 
 
 class WiktionaryPage:
