@@ -48,6 +48,25 @@ def test_get_word_info_equals_but_is_not_word_info_from_search(mocked_request_ur
     assert wi1 is not wi2
 
 
+def test_page_equalities(mocked_request_url_text):
+    word = 'olvidar'
+    wp_1 = WiktionaryPage(word=word)
+    wp_2 = WiktionaryPage(word=word)
+
+    assert wp_1 == wp_2
+    assert wp_1 is not wp_2
+
+    revision_a = 62345284
+    revision_b = 66217360
+    wp_with_revision = WiktionaryPage(word=word, revision=revision_a)
+    wp_with_revision_same = WiktionaryPage(word=word, revision=revision_a)
+    wp_with_revision_other = WiktionaryPage(word=word, revision=revision_b)
+
+    assert wp_1 != wp_with_revision
+    assert wp_with_revision == wp_with_revision_same
+    assert wp_with_revision != wp_with_revision_other
+
+
 def test_get_wiktionary_page_nonexistent(mocked_request_url_text):
     word = 'thispageaintexistent'
     with pytest.raises(palabras.core.WiktionaryPageNotFound):

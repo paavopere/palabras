@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Container, List, Optional, Sequence, Union
 import requests
 import bs4
@@ -22,13 +22,21 @@ class WiktionarySectionNotFound(LookupError):
 
 @dataclass
 class WordInfo:
-    word: str
-    definition_strings: List[str] = field(default_factory=list)
+    LANGUAGE = 'Spanish'
+    page_section: WiktionaryPageSection
 
     @classmethod
     def from_search(cls, word: str, *, revision: Optional[int] = None):
-        section = WiktionaryPage(word, revision).get_spanish_section()
-        return cls(word=word, definition_strings=section.definitions())
+        section = WiktionaryPage(word, revision).get_section(cls.LANGUAGE)
+        return cls(page_section=section)
+
+    @property
+    def definition_strings(self):
+        return self.page_section.definitions()
+
+    @property
+    def word(self):
+        return self.page_section.page.word
 
 
 class WiktionaryPage:
@@ -64,6 +72,13 @@ class WiktionaryPage:
 
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
+
+    def __eq__(self, other: WiktionaryPage) -> bool:
+        return (
+            self.word == other.word
+            and self.revision == other.revision
+            and self.soup == other.soup
+        )
 
     def get_spanish_section(self) -> WiktionaryPageSection:
         return self.get_section(language='Spanish')
@@ -122,6 +137,12 @@ class WiktionaryPageSection:
 
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
+
+    def __eq__(self, other: WiktionaryPageSection):
+        return (
+            self.page == other.page
+            and self.soup == other.soup
+        )
 
     def get_subsections(self, level='h3') -> List[Subsection]:
         subheadings = self.soup.find_all(level)
