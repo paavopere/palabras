@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from copy import copy
 from dataclasses import dataclass, field
-from inspect import Attribute
 from typing import Container, List, Optional, Sequence, Union
 import requests
 import bs4
