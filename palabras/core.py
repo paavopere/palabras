@@ -112,7 +112,7 @@ class WiktionaryPageSection:
     def __init__(self, soup: BeautifulSoup, page: Optional[WiktionaryPage] = None):
         # self.title = title
         self.page = page
-        self.soup = self._clean_soup(soup)
+        self.soup = soup
         
     def __repr__(self):
         return f'<{self.page!r} → {self.title!r}>'
@@ -120,15 +120,6 @@ class WiktionaryPageSection:
     @property
     def title(self):
         return self.soup.find(class_='mw-headline').text
-
-    @staticmethod
-    def _clean_soup(soup: BeautifulSoup):
-        """ Return a copy of soup, some elements thrown away """
-        soup = copy(soup)  # TODO assert that the original soup is unchanged
-        for e in soup.find_all(class_='wiktQuote'):
-            e.parent.decompose()
-
-        return soup
 
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
@@ -159,7 +150,7 @@ class Subsection(WiktionaryPageSection):
         self.parent = parent
         if not isinstance(parent, WiktionaryPageSection) or isinstance(parent, Subsection):
             raise TypeError('parent has to be WiktionaryPageSection and cannot be Subsection')
-        self.soup = self._clean_soup(soup)
+        self.soup = soup
         
     def __repr__(self):
         return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
