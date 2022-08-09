@@ -9,7 +9,9 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import Subsection, WiktionaryPage, WordInfo, get_heading_siblings_on_level, get_siblings_until, request_url_text
+from palabras.core import (
+    Subsection, WiktionaryPage, WordInfo, get_heading_siblings_on_level, get_siblings_until
+)
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
@@ -306,7 +308,7 @@ def test_get_heading_siblings_on_level():
     # should find 2,3,4,5
     assert len(get_heading_siblings_on_level(element)) == 4
 
-    element = soup.h3 # find the first h3
+    element = soup.h3  # find the first h3
     # should find 3,4
     assert len(get_heading_siblings_on_level(element)) == 2
 

@@ -198,7 +198,7 @@ class Subsection(WiktionaryPageSection):
         """
         res = []
         for e in li.children:
-            if e.name not in ('dl', 'ul'):  #  exclude nested stuff
+            if e.name not in ('dl', 'ul'):  # exclude nested stuff
                 res.append(e.get_text())
         return ''.join(res).strip()
 
