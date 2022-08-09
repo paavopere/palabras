@@ -22,8 +22,26 @@ test = [
     "pytest-mock",
     "mypy",
     "types-requests",
+    "flake8",
 ]
 
 
 [project.urls]
 Home = "https://github.com/paavopere/palabras"
+
+
+# tox can be used locally
+# there is also a GitHub workflow in .github/workflows/test.yml that runs similar commands
+# ... would be nice to manage both in one place
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = True
+envlist = py38
+
+[testenv]
+deps = -e .[test]
+commands = pytest --cov --cov-report=term-missing
+           mypy palabras --ignore-missing-imports
+           flake8
+"""
