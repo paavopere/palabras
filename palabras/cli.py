@@ -9,7 +9,7 @@ def main(args):
     parser.add_argument('word', metavar='<word>', type=str, help='A word to look up')
     parser.add_argument('-r', '--revision', type=int, metavar='<n>', help='Wiktionary revision ID (from permalink)')
     args = parser.parse_args(args)
-    
+
     try:
         print(parse(WordInfo.from_search(args.word, revision=args.revision)))
         return 0
