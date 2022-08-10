@@ -45,8 +45,11 @@ class WordInfo:
         """
         outputs = []
         for subsection in self.page_section.get_subsections():
-            if len(subsection.definitions()) > 0:
-                sub_output = f'{subsection.title}: {subsection.content_string()}'
+            if subsection.has_definitions():
+                sub_output = (
+                    f'{subsection.title}: {subsection.lead}\n'
+                    f'{render_list(subsection.definitions())}'
+                )
                 outputs.append(sub_output)
         return '\n\n'.join(outputs)
 
@@ -203,18 +206,14 @@ class Subsection(WiktionaryPageSection):
     def __repr__(self):
         return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
 
-    # TODO remove
-    def content_string(self) -> str:
+    @property
+    def lead(self) -> Optional[str]:
         """
-        Render contents as a human-readable string.
+        Get the lead, i.e. text of the first <p> under subsection
         """
-        lines = []
         p = self.soup.p
         if p:
-            lines.append(standardize_spaces(self.soup.p.get_text().strip()))
-        for definition in self.definitions():
-            lines.append(f'- {definition}')
-        return '\n'.join(lines)
+            return standardize_spaces(p.get_text().strip())
 
     def definitions(self) -> List[Definition]:
         """
@@ -225,6 +224,9 @@ class Subsection(WiktionaryPageSection):
             definitions_.append(
                 self.definition_list_item_to_str(definition_list_item))
         return definitions_
+
+    def has_definitions(self) -> bool:
+        return len(self.definitions()) > 0
 
     def _definition_list_items(self) -> List[bs4.Tag]:
         return self._definition_list_items_from_soup(self.soup)
@@ -305,6 +307,16 @@ def get_siblings_until(element: PageElement,
     return found
 
 
+# TODO test
 def standardize_spaces(s: str) -> str:
     """Replace non-breaking space U+00a0 with a space"""
     return s.replace('\u00a0', ' ')
+
+
+# TODO test
+def render_list(strlist: List[str], sep='\n', prefix='- ') -> str:
+    """
+    Take a list like ['foo', 'bar'] and render it as a multiline string like
+    '- foo\n- bar'
+    """
+    return sep.join(f'{prefix}{s}' for s in strlist)
