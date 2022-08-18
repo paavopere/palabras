@@ -214,6 +214,8 @@ class Subsection(WiktionaryPageSection):
         p = self.soup.p
         if p:
             return standardize_spaces(p.get_text().strip())
+        else:
+            return None
 
     def definitions(self) -> List[Definition]:
         """
