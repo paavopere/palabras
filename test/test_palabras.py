@@ -404,3 +404,30 @@ def test_subsection_raises_on_invalid_parent():
     # parent cannot be None
     with pytest.raises(TypeError):
         Subsection(parent=None, soup=placeholder_soup)
+
+
+def test_minimal_subsection_lead(mocker):
+    mock_html = '''
+    <h2><span id="SectionTitle"></span></h2>
+    <h3><span class="mw-headline">SubsectionTitle</span></h3>
+    <p>mock lead</p>
+    '''
+    mocker.patch('palabras.core.WiktionaryPage.get_page_html', return_value=mock_html)
+
+    page = WiktionaryPage('foo')
+    section = page.get_section('SectionTitle')
+    subsection = section.get_subsection('SubsectionTitle')
+    assert subsection.lead == 'mock lead'
+
+
+def test_minimal_subsection_empty_lead(mocker):
+    mock_html = '''
+    <h2><span id="SectionTitle"></span></h2>
+        <h3><span class="mw-headline">SubsectionTitle</span></h3>
+    '''
+    mocker.patch('palabras.core.WiktionaryPage.get_page_html', return_value=mock_html)
+
+    page = WiktionaryPage('foo')
+    section = page.get_section('SectionTitle')
+    subsection = section.get_subsection('SubsectionTitle')
+    assert subsection.lead is None
