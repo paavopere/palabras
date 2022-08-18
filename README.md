@@ -8,12 +8,37 @@
 ## Usage
 
 Call from command line like this:
+
 ```
-> python -m palabras olvidar
-olvidar
-- (transitive) to forget (be forgotten by)
-- (reflexive, intransitive) to forget, elude, escape
-- (with de, reflexive, intransitive) to forget, to leave behind
+python -m palabras ser
+```
+
+```
+Verb: ser (first-person singular present soy, first-person singular preterite fui, past participle sido)
+- to be (essentially or identified as)
+- to be (in the passive voice sense)
+- to exist; to occur
+
+Noun: ser m (plural seres)
+- a being, organism
+- nature, essence
+- value, worth
+```
+
+For more compact output:
+
+```
+python -m palabras ser --compact
+```
+
+```
+ser
+- to be (essentially or identified as)
+- to be (in the passive voice sense)
+- to exist; to occur
+- a being, organism
+- nature, essence
+- value, worth
 ```
 
 ## Install
@@ -45,15 +70,18 @@ pip install -e '.[test]'
 
 ### Checks
 
-Run tests:
+Run tests, linter, and type checks:
 
 ```
 pytest --cov --cov-report=term-missing
-```
-
-All tests should pass and coverage should be 100%.
-
-Run type checks:
-```
+flake8
 mypy palabras --ignore-missing-imports
 ```
+
+... or in one go:
+
+```
+tox
+```
+
+All checks should pass and test coverage should be 100% of lines.
