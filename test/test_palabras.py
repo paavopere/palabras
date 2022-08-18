@@ -28,21 +28,15 @@ def mocked_request_url_text(mocker: MockerFixture):
     mocker.patch('palabras.core.request_url_text', side_effect=lambda url: mock_cache[url])
 
 
-def test_get_word_info_return_type(mocked_request_url_text):
-    word = 'despacito'
-    wi = palabras.core.get_word_info(word)
-    assert isinstance(wi, palabras.core.WordInfo)
-
-
-def test_get_word_info_from_search_return_type(mocked_request_url_text):
+def test_word_info_from_search_return_type(mocked_request_url_text):
     word = 'despacito'
     wi = WordInfo.from_search(word)
     assert isinstance(wi, palabras.core.WordInfo)
 
 
-def test_get_word_info_equals_but_is_not_word_info_from_search(mocked_request_url_text):
+def test_word_info_equals_but_not_is(mocked_request_url_text):
     word = 'despacito'
-    wi1 = palabras.core.get_word_info(word)
+    wi1 = WordInfo.from_search(word)
     wi2 = WordInfo.from_search(word)
     assert wi1 == wi2
     assert wi1 is not wi2
@@ -126,15 +120,15 @@ def test_definition_list_item_to_str(mocked_request_url_text):
 
 def test_lookup_definition(mocked_request_url_text):
     word = 'culpar'
-    word_info = palabras.core.get_word_info(word)
-    assert word_info.definition_strings[0] == 'to blame'
+    wi = WordInfo.from_search(word)
+    assert wi.definition_strings[0] == 'to blame'
 
 
 def test_lookup_definition_complicated(mocked_request_url_text):
     word = 'empleado'  # this word has definitions for adjective, noun, and verb
     revision = 62175311
-    word_info = palabras.core.get_word_info(word, revision=revision)
-    assert word_info.definition_strings == [
+    wi = WordInfo.from_search(word, revision=revision)
+    assert wi.definition_strings == [
         'employed',
         'employee',
         'Masculine singular past participle of emplear.'
@@ -156,9 +150,9 @@ def test_lookup_different_definitions_in_history(mocked_request_url_text):
         '(with de, reflexive, intransitive) to forget, to leave behind'
     ]
 
-    assert palabras.core.get_word_info(word, revision=revision_1).definition_strings \
+    assert WordInfo.from_search(word, revision=revision_1).definition_strings \
         == expected_definitions_1
-    assert palabras.core.get_word_info(word, revision=revision_2).definition_strings \
+    assert WordInfo.from_search(word, revision=revision_2).definition_strings \
         == expected_definitions_2
 
 

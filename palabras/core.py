@@ -256,10 +256,6 @@ class Subsection(WiktionaryPageSection):
         return ''.join(res).strip()
 
 
-def get_word_info(word: str, revision: Optional[int] = None):
-    return WordInfo.from_search(word=word, revision=revision)
-
-
 def request_url_text(url: str) -> str:
     return requests.get(url).text  # pragma: no cover
 
