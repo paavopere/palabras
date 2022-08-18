@@ -1,5 +1,21 @@
-from typing import Container, List, Union
+from copy import copy
+from typing import Container, List, Union, Sequence
+import bs4
+from bs4 import BeautifulSoup
 from bs4.element import PageElement
+
+
+def tags_to_soup(tags: Sequence[bs4.Tag],
+                 *,
+                 features='html.parser') -> BeautifulSoup:
+    """
+    Given a list of tags, create a new BeautifulSoup object from those tags (copying tags to the
+    new soup object in order)
+    """
+    soup = BeautifulSoup(features=features)
+    for element in tags:
+        soup.append(copy(element))
+    return soup
 
 
 def get_heading_siblings_on_level(element):

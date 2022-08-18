@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from copy import copy
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from typing import List, Optional
 import requests
 import bs4
 from bs4 import BeautifulSoup
 from bs4.element import PageElement
 
-from .utils import render_list, get_heading_siblings_on_level, standardize_spaces
+from .utils import tags_to_soup, render_list, get_heading_siblings_on_level, standardize_spaces
 
 
 Definition = str  # TODO make a class out of this, with ability to carry extra info like synonyms
@@ -260,16 +259,3 @@ class Subsection(WiktionaryPageSection):
 
 def request_url_text(url: str) -> str:
     return requests.get(url).text  # pragma: no cover
-
-
-def tags_to_soup(tags: Sequence[bs4.Tag],
-                 *,
-                 features='html.parser') -> BeautifulSoup:
-    """
-    Given a list of tags, create a new BeautifulSoup object from those tags (copying tags to the
-    new soup object in order)
-    """
-    soup = BeautifulSoup(features=features)
-    for element in tags:
-        soup.append(copy(element))
-    return soup
