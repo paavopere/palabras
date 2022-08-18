@@ -10,9 +10,6 @@ from bs4.element import PageElement
 from .utils import tags_to_soup, render_list, get_heading_siblings_on_level, standardize_spaces
 
 
-Definition = str  # TODO make a class out of this, with ability to carry extra info like synonyms
-
-
 class WiktionaryPageNotFound(LookupError):
     pass
 
@@ -37,7 +34,7 @@ class WordInfo:
 
     @property
     def definition_strings(self):
-        return self.page_section.definitions()
+        return [d.text for d in self.page_section.definitions()]
 
     def definition_output(self) -> str:
         """
@@ -49,7 +46,7 @@ class WordInfo:
             if subsection.has_definitions():
                 sub_output = (
                     f'{subsection.title}: {subsection.lead}\n'
-                    f'{render_list(subsection.definitions())}'
+                    f'{render_list(d.to_str() for d in subsection.definitions())}'
                 )
                 outputs.append(sub_output)
         return '\n\n'.join(outputs)
@@ -60,8 +57,8 @@ class WordInfo:
         one after one another
         """
         definitions_with_bullet = [
-            f'- {dl}'
-            for dl in self.page_section.definitions()
+            f'- {d.to_str()}'
+            for d in self.page_section.definitions()
         ]
         lines = [self.word] + definitions_with_bullet
         return '\n'.join(lines)
@@ -162,7 +159,7 @@ class WiktionaryPageSection:
         return f'<{self.page!r} → {self.title!r}>'
 
     @property
-    def title(self):
+    def title(self) -> str:
         return self.soup.find(class_='mw-headline').text
 
     def __contains__(self, other: str) -> bool:
@@ -190,7 +187,7 @@ class WiktionaryPageSection:
         else:
             raise KeyError(f'No section with title: {title}')
 
-    def definitions(self):
+    def definitions(self) -> List[Definition]:
         definitions_ = []
         for sub in self.get_subsections():
             definitions_.extend(sub.definitions())
@@ -222,11 +219,12 @@ class Subsection(WiktionaryPageSection):
         """
         Parse definitions from soup and return them as a list of strings.
         """
-        definitions_ = []
-        for definition_list_item in self._definition_list_items():
-            definitions_.append(
-                self.definition_list_item_to_str(definition_list_item))
-        return definitions_
+        return [
+            Definition(text=self.definition_list_item_to_str(definition_list_item),
+                       extra=None,
+                       subsection=self)
+            for definition_list_item in self._definition_list_items()
+        ]
 
     def has_definitions(self) -> bool:
         return len(self.definitions()) > 0
@@ -255,6 +253,16 @@ class Subsection(WiktionaryPageSection):
             if e.name not in ('dl', 'ul'):  # exclude nested stuff
                 res.append(e.get_text())
         return ''.join(res).strip()
+
+
+@dataclass
+class Definition:
+    text: str
+    extra: Optional[dict]  # we would put synonyms, antonyms, usage examples, etc. here
+    subsection: Subsection
+
+    def to_str(self):
+        return self.text
 
 
 def request_url_text(url: str) -> str:

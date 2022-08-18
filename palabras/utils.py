@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Container, List, Union, Sequence
+from typing import Container, List, Union, Sequence, Iterable
 import bs4
 from bs4 import BeautifulSoup
 from bs4.element import PageElement
@@ -60,7 +60,7 @@ def standardize_spaces(s: str) -> str:
     return s.replace('\u00a0', ' ')
 
 
-def render_list(strlist: List[str], sep='\n', prefix='- ') -> str:
+def render_list(strlist: Iterable[str], sep='\n', prefix='- ') -> str:
     """
     Take a list like ['foo', 'bar'] and render it as a multiline string like:
     - foo
