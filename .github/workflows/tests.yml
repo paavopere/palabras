@@ -19,7 +19,7 @@ jobs:
         python -m pip install -e '.[test]'
     - name: pytest
       run: |
-        pytest --cov --cov-report=term-missing
+        pytest --cov --cov-report=term-missing --doctest-modules
     - name: mypy
       run: |
         mypy palabras --ignore-missing-imports

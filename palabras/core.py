@@ -305,16 +305,27 @@ def get_siblings_until(element: PageElement,
     return found
 
 
-# TODO test
 def standardize_spaces(s: str) -> str:
-    """Replace non-breaking space U+00a0 with a space"""
+    """
+    Replace non-breaking space U+00a0 with a space
+
+    >>> standardize_spaces('This\u00a0 \u00a0 has some\u00a0nbsps')
+    'This    has some nbsps'
+    """
     return s.replace('\u00a0', ' ')
 
 
-# TODO test
 def render_list(strlist: List[str], sep='\n', prefix='- ') -> str:
     """
-    Take a list like ['foo', 'bar'] and render it as a multiline string like
-    '- foo\n- bar'
+    Take a list like ['foo', 'bar'] and render it as a multiline string like:
+    - foo
+    - bar
+
+    >>> print(render_list(['foo', 'bar']))
+    - foo
+    - bar
+
+    >>> render_list(['world', 'again'], sep='||', prefix='hello')
+    'helloworld||helloagain'
     """
     return sep.join(f'{prefix}{s}' for s in strlist)
