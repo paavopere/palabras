@@ -9,9 +9,8 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import (
-    Subsection, WiktionaryPage, WordInfo, get_heading_siblings_on_level, get_siblings_until
-)
+from palabras.core import Subsection, WiktionaryPage, WordInfo
+from palabras.utils import get_siblings_until, get_heading_siblings_on_level
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
