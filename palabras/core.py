@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Container, List, Optional, Sequence, Union
 import requests
 import bs4
@@ -22,13 +22,48 @@ class WiktionarySectionNotFound(LookupError):
 
 @dataclass
 class WordInfo:
-    word: str
-    definition_strings: List[str] = field(default_factory=list)
+    LANGUAGE = 'Spanish'
+    page_section: WiktionaryPageSection
 
     @classmethod
     def from_search(cls, word: str, *, revision: Optional[int] = None):
-        section = WiktionaryPage(word, revision).get_spanish_section()
-        return cls(word=word, definition_strings=section.definitions())
+        section = WiktionaryPage(word, revision).get_section(cls.LANGUAGE)
+        return cls(page_section=section)
+
+    @property
+    def word(self):
+        return self.page_section.page.word
+
+    @property
+    def definition_strings(self):
+        return self.page_section.definitions()
+
+    def definition_output(self) -> str:
+        """
+        Human-readable multiline string with all definitions listed under its
+        corresponding part of speech
+        """
+        outputs = []
+        for subsection in self.page_section.get_subsections():
+            if subsection.has_definitions():
+                sub_output = (
+                    f'{subsection.title}: {subsection.lead}\n'
+                    f'{render_list(subsection.definitions())}'
+                )
+                outputs.append(sub_output)
+        return '\n\n'.join(outputs)
+
+    def compact_definition_output(self) -> str:
+        """
+        Human-readable multiline string with word and all definitions listed
+        one after one another
+        """
+        definitions_with_bullet = [
+            f'- {dl}'
+            for dl in self.page_section.definitions()
+        ]
+        lines = [self.word] + definitions_with_bullet
+        return '\n'.join(lines)
 
 
 class WiktionaryPage:
@@ -64,6 +99,15 @@ class WiktionaryPage:
 
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (
+            self.word == other.word
+            and self.revision == other.revision
+            and self.soup == other.soup
+        )
 
     def get_spanish_section(self) -> WiktionaryPageSection:
         return self.get_section(language='Spanish')
@@ -123,6 +167,14 @@ class WiktionaryPageSection:
     def __contains__(self, other: str) -> bool:
         return other in str(self.soup)
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (
+            self.page == other.page
+            and self.soup == other.soup
+        )
+
     def get_subsections(self, level='h3') -> List[Subsection]:
         subheadings = self.soup.find_all(level)
         tag_sets = [get_heading_siblings_on_level(sh) for sh in subheadings]
@@ -154,18 +206,16 @@ class Subsection(WiktionaryPageSection):
     def __repr__(self):
         return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
 
-    def content_string(self) -> str:
+    @property
+    def lead(self) -> Optional[str]:
         """
-        Render contents as a human-readable string.
+        Get the lead, i.e. text of the first <p> under subsection
         """
-        lines = []
         p = self.soup.p
         if p:
-            lines.append(self.soup.p.get_text().strip())
-        for definition in self.definitions():
-            lines.append(f'- {definition}')
-        lines.append('')  # add with empty line
-        return '\n'.join(lines)
+            return standardize_spaces(p.get_text().strip())
+        else:
+            return None
 
     def definitions(self) -> List[Definition]:
         """
@@ -176,6 +226,9 @@ class Subsection(WiktionaryPageSection):
             definitions_.append(
                 self.definition_list_item_to_str(definition_list_item))
         return definitions_
+
+    def has_definitions(self) -> bool:
+        return len(self.definitions()) > 0
 
     def _definition_list_items(self) -> List[bs4.Tag]:
         return self._definition_list_items_from_soup(self.soup)
@@ -254,3 +307,18 @@ def get_siblings_until(element: PageElement,
         else:
             found.append(sibling)
     return found
+
+
+# TODO test
+def standardize_spaces(s: str) -> str:
+    """Replace non-breaking space U+00a0 with a space"""
+    return s.replace('\u00a0', ' ')
+
+
+# TODO test
+def render_list(strlist: List[str], sep='\n', prefix='- ') -> str:
+    """
+    Take a list like ['foo', 'bar'] and render it as a multiline string like
+    '- foo\n- bar'
+    """
+    return sep.join(f'{prefix}{s}' for s in strlist)

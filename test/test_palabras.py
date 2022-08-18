@@ -48,6 +48,35 @@ def test_get_word_info_equals_but_is_not_word_info_from_search(mocked_request_ur
     assert wi1 is not wi2
 
 
+def test_page_equalities(mocked_request_url_text):
+    word = 'olvidar'
+    wp_1 = WiktionaryPage(word=word)
+    wp_2 = WiktionaryPage(word=word)
+
+    assert wp_1 == wp_2
+    assert wp_1 is not wp_2
+
+    revision_a = 62345284
+    revision_b = 66217360
+    wp_with_revision = WiktionaryPage(word=word, revision=revision_a)
+    wp_with_revision_same = WiktionaryPage(word=word, revision=revision_a)
+    wp_with_revision_other = WiktionaryPage(word=word, revision=revision_b)
+
+    assert wp_1 != wp_with_revision
+    assert wp_with_revision == wp_with_revision_same
+    assert wp_with_revision != wp_with_revision_other
+
+
+def test_eqs_with_other_types(mocked_request_url_text):
+    word = 'olvidar'
+    page = WiktionaryPage(word)
+    section = page.get_section('Spanish')
+    wi = WordInfo(section)
+    assert page != 'foo'
+    assert section != 'foo'
+    assert wi != 'foo'
+
+
 def test_get_wiktionary_page_nonexistent(mocked_request_url_text):
     word = 'thispageaintexistent'
     with pytest.raises(palabras.core.WiktionaryPageNotFound):
@@ -138,6 +167,19 @@ def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
     palabras.cli.main(args)
     captured = capsys.readouterr()
     expected = dedent('''
+        Verb: olvidar (first-person singular present olvido, first-person singular preterite olvidé, past participle olvidado)
+        - (transitive) to forget (be forgotten by)
+        - (reflexive, intransitive) to forget, elude, escape
+        - (with de, reflexive, intransitive) to forget, to leave behind
+    ''').lstrip()  # noqa: E501
+    assert captured.out == expected
+
+
+def test_cli_compact(capsys: pytest.CaptureFixture, mocked_request_url_text):
+    args = ['olvidar', '--compact']
+    palabras.cli.main(args)
+    captured = capsys.readouterr()
+    expected = dedent('''
         olvidar
         - (transitive) to forget (be forgotten by)
         - (reflexive, intransitive) to forget, elude, escape
@@ -152,11 +194,11 @@ def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args3 = ['olvidar', '--revision=62345284']
 
     expected = dedent('''
-        olvidar
+        Verb: olvidar (first-person singular present olvido, first-person singular preterite olvidé, past participle olvidado)
         - to forget; to elude, escape (be forgotten by)
         - (reflexive) to forget
         - (reflexive) to leave behind
-    ''').lstrip()
+    ''').lstrip()  # noqa: E501
 
     for args in args1, args2, args3:
         exitcode = palabras.cli.main(args)
@@ -167,6 +209,25 @@ def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
 
 def test_cli_ser(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['ser']
+    exitcode = palabras.cli.main(args)
+    captured = capsys.readouterr()
+    expected = dedent('''
+        Verb: ser (first-person singular present soy, first-person singular preterite fui, past participle sido)
+        - to be (essentially or identified as)
+        - to be (in the passive voice sense)
+        - to exist; to occur
+
+        Noun: ser m (plural seres)
+        - a being, organism
+        - nature, essence
+        - value, worth
+    ''').lstrip()  # noqa: E501
+    assert captured.out == expected
+    assert exitcode == 0
+
+
+def test_cli_ser_compact(capsys: pytest.CaptureFixture, mocked_request_url_text):
+    args = ['ser', '--compact']
     exitcode = palabras.cli.main(args)
     captured = capsys.readouterr()
     expected = dedent('''
@@ -282,16 +343,6 @@ def test_get_nonexistent_subsection(mocked_request_url_text):
     section = page.get_spanish_section()
     with pytest.raises(KeyError, match='No section with title:'):
         section.get_subsection('Nonexistent section')
-
-
-def test_adjective_subsection_content_string(mocked_request_url_text):
-    page = WiktionaryPage('empleado')
-    expected = dedent('''
-        empleado (feminine empleada, masculine plural empleados, feminine plural empleadas)
-        - employed
-    ''').lstrip()
-    ss = page.get_spanish_section().get_subsection('Adjective')
-    assert ss.content_string() == expected
 
 
 def test_get_heading_siblings_on_level():

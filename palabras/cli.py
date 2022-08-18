@@ -20,17 +20,24 @@ def main(args):
         metavar='<n>',
         help='Wiktionary revision ID (from permalink)'
     )
+    parser.add_argument(
+        '--compact',
+        action='store_true',
+        help='List definitions for all parts of speech together'
+    )
     args = parser.parse_args(args)
 
     try:
-        print(parse(WordInfo.from_search(args.word, revision=args.revision)))
+        word_info = WordInfo.from_search(args.word, revision=args.revision)
+        print(parse(word_info, compact=args.compact))
         return 0
     except (WiktionaryPageNotFound, WiktionarySectionNotFound) as exc:
         print(exc)
         return 1
 
 
-def parse(word_info: WordInfo) -> str:
-    lines = [word_info.word]
-    lines += [f'- {ds}' for ds in word_info.definition_strings]
-    return '\n'.join(lines)
+def parse(word_info: WordInfo, compact: bool) -> str:
+    if compact:
+        return word_info.compact_definition_output()
+    else:
+        return word_info.definition_output()
