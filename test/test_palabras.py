@@ -438,12 +438,12 @@ def test_word_info_to_dict(mocked_request_url_text):
     expected = dict(
         word='olvidar',
         language='Spanish',
-        definition_sections=[
+        definition_subsections=[
             dict(
                 part_of_speech='Verb',
                 word='olvidar',
                 extra='(first-person singular present olvido, first-person singular preterite'
-                      'olvidé, past participle olvidado)',
+                      ' olvidé, past participle olvidado)',
                 # extras=[
                 #     dict(attribute='first-person singular present', value='olvido'),
                 #     dict(attribute='first-person singular preterite', value='olvidé'),

@@ -36,8 +36,10 @@ class WordInfo:
     def definition_strings(self):
         return [d.text for d in self.page_section.definitions()]
 
-    def definition_sections(self):
-        return self.page_section.definition_subsections()
+    # TODO revise naming
+    @property
+    def definition_subsections(self) -> List[Subsection]:
+        return self.page_section.get_definition_subsections()
 
     def definition_output(self) -> str:
         """
@@ -71,7 +73,7 @@ class WordInfo:
         return dict(
             word=self.word,
             language=self.LANGUAGE,
-            definition_sections=[d.to_dict() for d in self.definition_sections()]
+            definition_subsections=[d.to_dict() for d in self.definition_subsections]
         )
 
 
@@ -198,9 +200,12 @@ class WiktionaryPageSection:
         else:
             raise KeyError(f'No section with title: {title}')
 
+    def get_definition_subsections(self, level='h3') -> List[Subsection]:
+        return [sub for sub in self.get_subsections(level=level) if sub.has_definitions()]
+
     def definitions(self) -> List[Definition]:
         definitions_ = []
-        for sub in self.get_subsections():
+        for sub in self.get_definition_subsections():
             definitions_.extend(sub.definitions())
         return definitions_
 
@@ -215,6 +220,21 @@ class Subsection(WiktionaryPageSection):
     def __repr__(self):
         return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
 
+    def to_dict(self) -> dict:
+        if self.has_definitions():
+            return dict(
+                part_of_speech=self.title,
+                word=self.word,
+                extra=self.lead_extra,
+                definitions=[d.to_dict() for d in self.definitions()]
+            )
+        else:
+            return dict()
+
+    @property
+    def word(self) -> str:
+        return self.parent.page.word
+
     @property
     def lead(self) -> Optional[str]:
         """
@@ -225,6 +245,13 @@ class Subsection(WiktionaryPageSection):
             return standardize_spaces(p.get_text().strip())
         else:
             return None
+
+    @property
+    def lead_extra(self) -> Optional[str]:
+        if self.lead is None:
+            return None
+        return self.lead.replace(self.word, '').strip()
+
 
     def definitions(self) -> List[Definition]:
         """
@@ -272,8 +299,11 @@ class Definition:
     extra: Optional[dict]  # we would put synonyms, antonyms, usage examples, etc. here
     subsection: Subsection
 
-    def to_str(self):
+    def to_str(self) -> str:
         return self.text
+
+    def to_dict(self) -> dict:
+        return dict(text=self.text)
 
 
 def request_url_text(url: str) -> str:
