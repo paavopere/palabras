@@ -36,6 +36,9 @@ class WordInfo:
     def definition_strings(self):
         return [d.text for d in self.page_section.definitions()]
 
+    def definition_sections(self):
+        return self.page_section.definition_subsections()
+
     def definition_output(self) -> str:
         """
         Human-readable multiline string with all definitions listed under its
@@ -62,6 +65,14 @@ class WordInfo:
         ]
         lines = [self.word] + definitions_with_bullet
         return '\n'.join(lines)
+
+    def to_dict(self) -> dict:
+        """Everything related to this WordInfo object as a dict"""
+        return dict(
+            word=self.word,
+            language=self.LANGUAGE,
+            definition_sections=[d.to_dict() for d in self.definition_sections()]
+        )
 
 
 class WiktionaryPage:
