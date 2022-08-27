@@ -20,6 +20,17 @@ class WiktionarySectionNotFound(LookupError):
     pass
 
 
+
+def _render_subsection_lead(ss: Subsection) -> str:
+    return f'{ss.part_of_speech}: {ss.word} ({_render_subsection_lead_extras(ss)})'
+
+
+def _render_subsection_lead_extras(ss: Subsection) -> str:
+    lead_extra_strings = [f'{le["attribute"]} {le["value"]}'
+                          for le in ss.lead_extras]
+    return ', '.join(lead_extra_strings)
+
+
 @dataclass
 class WordInfo:
     LANGUAGE = 'Spanish'
@@ -36,7 +47,7 @@ class WordInfo:
 
     @property
     def definition_strings(self):
-        return [d.text for d in self.page_section.definitions()]
+        return [d.text for d in self.page_section.definitions]
 
     # TODO revise naming
     @property
@@ -52,8 +63,8 @@ class WordInfo:
         for subsection in self.page_section.get_subsections():
             if subsection.has_definitions():
                 sub_output = (
-                    f'{subsection.title}: {subsection.lead}\n'
-                    f'{render_list(d.to_str() for d in subsection.definitions())}'
+                    f'{_render_subsection_lead(subsection)}\n'
+                    f'{render_list(d.to_str() for d in subsection.definitions)}'
                 )
                 outputs.append(sub_output)
         return '\n\n'.join(outputs)
@@ -65,7 +76,7 @@ class WordInfo:
         """
         definitions_with_bullet = [
             f'- {d.to_str()}'
-            for d in self.page_section.definitions()
+            for d in self.page_section.definitions
         ]
         lines = [self.word] + definitions_with_bullet
         return '\n'.join(lines)
@@ -202,10 +213,11 @@ class WiktionaryPageSection:
     def get_definition_subsections(self, level='h3') -> List[Subsection]:
         return [sub for sub in self.get_subsections(level=level) if sub.has_definitions()]
 
+    @property
     def definitions(self) -> List[Definition]:
         definitions_ = []
         for sub in self.get_definition_subsections():
-            definitions_.extend(sub.definitions())
+            definitions_.extend(sub.definitions)
         return definitions_
 
 
@@ -226,13 +238,17 @@ class Subsection(WiktionaryPageSection):
     def to_dict(self) -> dict:
         if self.has_definitions():
             return dict(
-                part_of_speech=self.title,
+                part_of_speech=self.part_of_speech,
                 word=self.word,
                 extras=self.lead_extras,
-                definitions=[d.to_dict() for d in self.definitions()]
+                definitions=[d.to_dict() for d in self.definitions]
             )
         else:
             return dict()
+
+    @property
+    def part_of_speech(self) -> str:
+        return self.title
 
     @property
     def word(self) -> str:
@@ -245,14 +261,6 @@ class Subsection(WiktionaryPageSection):
     @property
     def _lead_p(self) -> bs4.Tag:
         return self.soup.p or _EMPTY_TAG
-
-    # TODO remove
-    @property
-    def lead(self) -> str:
-        """
-        Get the lead, i.e. text of the first <p> under subsection
-        """
-        return standardize_spaces(self._lead_p.get_text().strip())
 
     @property
     def lead_extras(self) -> List[dict]:
@@ -268,6 +276,7 @@ class Subsection(WiktionaryPageSection):
                       'value': value_tag.text})
         return L
 
+    @property
     def definitions(self) -> List[Definition]:
         """
         Parse definitions from soup and return them as a list of strings.
@@ -280,7 +289,7 @@ class Subsection(WiktionaryPageSection):
         ]
 
     def has_definitions(self) -> bool:
-        return len(self.definitions()) > 0
+        return len(self.definitions) > 0
 
     def _definition_list_items(self) -> List[bs4.Tag]:
         return self._definition_list_items_from_soup(self.soup)

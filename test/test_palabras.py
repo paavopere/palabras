@@ -409,14 +409,18 @@ def test_minimal_subsection_lead(mocker):
     mock_html = '''
     <h2><span id="SectionTitle"></span></h2>
     <h3><span class="mw-headline">SubsectionTitle</span></h3>
-    <p>mock lead</p>
+    <p>
+        <span class="headword">headword</span>
+        (<i>an attribute</i><b>a value</b>)
+    </p>
     '''
     mocker.patch('palabras.core.WiktionaryPage.get_page_html', return_value=mock_html)
 
     page = WiktionaryPage('foo')
     section = page.get_section('SectionTitle')
     subsection = section.get_subsection('SubsectionTitle')
-    assert subsection.lead == 'mock lead'
+    assert subsection.word == 'headword'
+    assert subsection.lead_extras == [{'attribute': 'an attribute', 'value': 'a value'}]
 
 
 def test_minimal_subsection_empty_lead(mocker):
@@ -434,7 +438,7 @@ def test_minimal_subsection_empty_lead(mocker):
         .get_subsection('SubsectionTitle')
     )
 
-    assert subsection.lead == ''
+    assert subsection.word == ''
     assert subsection.lead_extras == []
     assert subsection.to_dict() == {}
 
