@@ -430,8 +430,8 @@ def test_minimal_subsection_empty_lead(mocker):
     # create a subsection through a page object
     subsection = (
         WiktionaryPage('foo')
-            .get_section('SectionTitle')
-            .get_subsection('SubsectionTitle')
+        .get_section('SectionTitle')
+        .get_subsection('SubsectionTitle')
     )
 
     assert subsection.lead is None
@@ -466,6 +466,3 @@ def test_word_info_to_dict(mocked_request_url_text):
     )
 
     assert wi.to_dict() == expected
-
-
-

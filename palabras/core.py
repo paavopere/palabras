@@ -252,7 +252,6 @@ class Subsection(WiktionaryPageSection):
             return None
         return self.lead.replace(self.word, '').strip()
 
-
     def definitions(self) -> List[Definition]:
         """
         Parse definitions from soup and return them as a list of strings.
