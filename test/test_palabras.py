@@ -434,8 +434,8 @@ def test_minimal_subsection_empty_lead(mocker):
         .get_subsection('SubsectionTitle')
     )
 
-    assert subsection.lead is None
-    assert subsection.lead_extra is None
+    assert subsection.lead == ''
+    assert subsection.lead_extras == []
     assert subsection.to_dict() == {}
 
 

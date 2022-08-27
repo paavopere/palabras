@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import List, Optional
+
 import requests
 import bs4
 from bs4 import BeautifulSoup
@@ -141,10 +143,7 @@ def _extract_language_section(page_soup: BeautifulSoup, language: str) -> Beauti
 
 def _language_section_tags(page_soup: BeautifulSoup, language: str) -> List[PageElement]:
     """
-    Get a list of all BeautifulSoup tags in the logical section that matches `language`.
-
-    TODO clarify whether these are guaranteed to be **Tag**s or if they're more general
-        **PageElement**s
+    Get a list of all BeautifulSoup elements in the logical section that matches `language`.
     """
     start_tag = _language_section_start_tag(page_soup, language)
     return get_heading_siblings_on_level(start_tag)
@@ -211,6 +210,9 @@ class WiktionaryPageSection:
 
 
 class Subsection(WiktionaryPageSection):
+
+    _empty_tag = bs4.Tag(name='empty')
+
     def __init__(self, parent: WiktionaryPageSection, soup: BeautifulSoup):
         self.parent = parent
         if not isinstance(parent, WiktionaryPageSection) or isinstance(parent, Subsection):
@@ -225,7 +227,7 @@ class Subsection(WiktionaryPageSection):
             return dict(
                 part_of_speech=self.title,
                 word=self.word,
-                extra=self.lead_extra,
+                extras=self.lead_extras,
                 definitions=[d.to_dict() for d in self.definitions()]
             )
         else:
@@ -233,23 +235,32 @@ class Subsection(WiktionaryPageSection):
 
     @property
     def word(self) -> str:
-        return self.parent.page.word
+        return self._word_tag.text
 
     @property
-    def lead(self) -> Optional[str]:
+    def _word_tag(self) -> bs4.Tag:
+        return self._lead_p.find(class_='headword') or self._empty_tag
+
+    @property
+    def _lead_p(self) -> bs4.Tag:
+        return self.soup.p or self._empty_tag
+
+    # TODO remove
+    @property
+    def lead(self) -> str:
         """
         Get the lead, i.e. text of the first <p> under subsection
         """
-        p = self.soup.p
-        if p is None:
-            return None
-        return standardize_spaces(p.get_text().strip())
+        return standardize_spaces(self._lead_p.get_text().strip())
 
     @property
-    def lead_extra(self) -> Optional[str]:
-        if self.lead is None:
-            return None
-        return self.lead.replace(self.word, '').strip()
+    def lead_extras(self) -> List[dict]:
+        word_tag = self._word_tag
+        opening_parenthesis = self._lead_p.find(text=re.compile(r'\('))
+        closing_parenthesis = ...
+
+        return []
+
 
     def definitions(self) -> List[Definition]:
         """
@@ -257,7 +268,7 @@ class Subsection(WiktionaryPageSection):
         """
         return [
             Definition(text=self.definition_list_item_to_str(definition_list_item),
-                       extra=None,
+                       extras=None,
                        subsection=self)
             for definition_list_item in self._definition_list_items()
         ]
@@ -294,7 +305,7 @@ class Subsection(WiktionaryPageSection):
 @dataclass
 class Definition:
     text: str
-    extra: Optional[dict]  # we would put synonyms, antonyms, usage examples, etc. here
+    extras: Optional[dict]  # we would put synonyms, antonyms, usage examples, etc. here
     subsection: Subsection
 
     def to_str(self) -> str:
