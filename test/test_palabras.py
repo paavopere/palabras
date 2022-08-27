@@ -420,16 +420,23 @@ def test_minimal_subsection_lead(mocker):
 
 
 def test_minimal_subsection_empty_lead(mocker):
+    # mock to create page with a minimal HTML that doesn't have <p> under subsection
     mock_html = '''
     <h2><span id="SectionTitle"></span></h2>
         <h3><span class="mw-headline">SubsectionTitle</span></h3>
     '''
     mocker.patch('palabras.core.WiktionaryPage.get_page_html', return_value=mock_html)
 
-    page = WiktionaryPage('foo')
-    section = page.get_section('SectionTitle')
-    subsection = section.get_subsection('SubsectionTitle')
+    # create a subsection through a page object
+    subsection = (
+        WiktionaryPage('foo')
+            .get_section('SectionTitle')
+            .get_subsection('SubsectionTitle')
+    )
+
     assert subsection.lead is None
+    assert subsection.lead_extra is None
+    assert subsection.to_dict() == {}
 
 
 def test_word_info_to_dict(mocked_request_url_text):
@@ -459,3 +466,6 @@ def test_word_info_to_dict(mocked_request_url_text):
     )
 
     assert wi.to_dict() == expected
+
+
+
