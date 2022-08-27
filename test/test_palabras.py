@@ -439,7 +439,6 @@ def test_minimal_subsection_empty_lead(mocker):
     assert subsection.to_dict() == {}
 
 
-@pytest.mark.xfail
 def test_word_info_to_dict(mocked_request_url_text):
     wi = WordInfo.from_search('olvidar')
 

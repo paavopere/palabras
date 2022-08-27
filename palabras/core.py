@@ -209,9 +209,10 @@ class WiktionaryPageSection:
         return definitions_
 
 
-class Subsection(WiktionaryPageSection):
+_EMPTY_TAG = bs4.Tag(name='empty')
 
-    _empty_tag = bs4.Tag(name='empty')
+
+class Subsection(WiktionaryPageSection):
 
     def __init__(self, parent: WiktionaryPageSection, soup: BeautifulSoup):
         self.parent = parent
@@ -239,11 +240,11 @@ class Subsection(WiktionaryPageSection):
 
     @property
     def _word_tag(self) -> bs4.Tag:
-        return self._lead_p.find(class_='headword') or self._empty_tag
+        return self._lead_p.find(class_='headword') or _EMPTY_TAG
 
     @property
     def _lead_p(self) -> bs4.Tag:
-        return self.soup.p or self._empty_tag
+        return self.soup.p or _EMPTY_TAG
 
     # TODO remove
     @property
@@ -256,11 +257,16 @@ class Subsection(WiktionaryPageSection):
     @property
     def lead_extras(self) -> List[dict]:
         word_tag = self._word_tag
-        opening_parenthesis = self._lead_p.find(text=re.compile(r'\('))
-        closing_parenthesis = ...
+        opening_parenthesis = word_tag.find_next_sibling(string=re.compile(r'\(')) or _EMPTY_TAG
 
-        return []
-
+        # take attributes from <i> tags and corresponding values from the following <b> tag
+        # TODO this seems quite fragile
+        L = []
+        for attribute_tag in opening_parenthesis.find_next_siblings('i'):
+            value_tag = attribute_tag.find_next_sibling('b')
+            L.append({'attribute': attribute_tag.text,
+                      'value': value_tag.text})
+        return L
 
     def definitions(self) -> List[Definition]:
         """
