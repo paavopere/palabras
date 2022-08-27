@@ -241,10 +241,9 @@ class Subsection(WiktionaryPageSection):
         Get the lead, i.e. text of the first <p> under subsection
         """
         p = self.soup.p
-        if p:
-            return standardize_spaces(p.get_text().strip())
-        else:
+        if p is None:
             return None
+        return standardize_spaces(p.get_text().strip())
 
     @property
     def lead_extra(self) -> Optional[str]:

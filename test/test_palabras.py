@@ -439,6 +439,7 @@ def test_minimal_subsection_empty_lead(mocker):
     assert subsection.to_dict() == {}
 
 
+@pytest.mark.xfail
 def test_word_info_to_dict(mocked_request_url_text):
     wi = WordInfo.from_search('olvidar')
 
@@ -449,13 +450,11 @@ def test_word_info_to_dict(mocked_request_url_text):
             dict(
                 part_of_speech='Verb',
                 word='olvidar',
-                extra='(first-person singular present olvido, first-person singular preterite'
-                      ' olvidé, past participle olvidado)',
-                # extras=[
-                #     dict(attribute='first-person singular present', value='olvido'),
-                #     dict(attribute='first-person singular preterite', value='olvidé'),
-                #     dict(attribute='past participle', value='olvidado'),
-                # ],
+                extras=[
+                    dict(attribute='first-person singular present', value='olvido'),
+                    dict(attribute='first-person singular preterite', value='olvidé'),
+                    dict(attribute='past participle', value='olvidado'),
+                ],
                 definitions=[
                     dict(text='(transitive) to forget (be forgotten by)'),
                     dict(text='(reflexive, intransitive) to forget, elude, escape'),
