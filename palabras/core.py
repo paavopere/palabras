@@ -9,7 +9,7 @@ import bs4
 from bs4 import BeautifulSoup
 from bs4.element import PageElement
 
-from .utils import tags_to_soup, render_list, get_heading_siblings_on_level, standardize_spaces
+from .utils import tags_to_soup, render_list, get_heading_siblings_on_level
 
 
 class WiktionaryPageNotFound(LookupError):
@@ -18,17 +18,6 @@ class WiktionaryPageNotFound(LookupError):
 
 class WiktionarySectionNotFound(LookupError):
     pass
-
-
-
-def _render_subsection_lead(ss: Subsection) -> str:
-    return f'{ss.part_of_speech}: {ss.word} ({_render_subsection_lead_extras(ss)})'
-
-
-def _render_subsection_lead_extras(ss: Subsection) -> str:
-    lead_extra_strings = [f'{le["attribute"]} {le["value"]}'
-                          for le in ss.lead_extras]
-    return ', '.join(lead_extra_strings)
 
 
 @dataclass
@@ -88,6 +77,26 @@ class WordInfo:
             language=self.LANGUAGE,
             definition_subsections=[d.to_dict() for d in self.definition_subsections]
         )
+
+
+def _render_subsection_lead(ss: Subsection) -> str:
+    parts = [
+        f'{ss.part_of_speech}:',
+        ss.word
+    ]
+    if ss.gender:
+        parts.append(ss.gender)
+    if ss.lead_extras:
+        parts.append(f'({_render_subsection_lead_extras(ss.lead_extras)})')
+    return ' '.join(parts)
+
+
+def _render_subsection_lead_extras(lead_extras: List[dict]) -> str:
+    lead_extra_strings = [
+        f'{le["attribute"]} {le["value"]}'
+        for le in lead_extras
+    ]
+    return ', '.join(lead_extra_strings)
 
 
 class WiktionaryPage:
@@ -261,6 +270,14 @@ class Subsection(WiktionaryPageSection):
     @property
     def _lead_p(self) -> bs4.Tag:
         return self.soup.p or _EMPTY_TAG
+
+    # TODO write a specific test
+    @property
+    def gender(self) -> Optional[str]:
+        tag = self._lead_p.find(class_='gender')
+        if tag is None:
+            return None
+        return tag.text
 
     @property
     def lead_extras(self) -> List[dict]:
