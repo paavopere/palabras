@@ -78,7 +78,7 @@ class WordInfo:
 
 
 class WiktionaryPage:
-    word: Optional[str] = None
+    word: str
     revision: Optional[int] = None
 
     def __init__(self,
@@ -163,7 +163,7 @@ class WiktionaryPageSection:
 
     # TODO clear up the hierarchy and inheritance between WiktionaryPageSection and Subsection.
 
-    def __init__(self, soup: BeautifulSoup, page: Optional[WiktionaryPage] = None):
+    def __init__(self, soup: BeautifulSoup, page: WiktionaryPage):
         # self.title = title
         self.page = page
         self.soup = soup
