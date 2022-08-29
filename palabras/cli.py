@@ -1,10 +1,12 @@
 import argparse
 
+from . import __version__
 from .core import WordInfo, WiktionaryPageNotFound, LanguageEntryNotFound
 
 
 def main(args):
     parser = argparse.ArgumentParser(
+        prog='palabras',
         description='Look up a word',
         formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50)
     )
@@ -13,6 +15,11 @@ def main(args):
         metavar='<word>',
         type=str,
         help='A word to look up'
+    )
+    parser.add_argument(
+        '-V', '--version',
+        action='version',
+        version=f'%(prog)s {__version__}'
     )
     parser.add_argument(
         '-r', '--revision',
