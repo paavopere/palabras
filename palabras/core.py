@@ -66,7 +66,7 @@ class WordInfo:
             f'- {d.to_str()}'
             for d in self.entry.definitions
         ]
-        lines = [self.word] + definitions_with_bullet
+        lines = [f'[bold yellow]{self.word}[/]'] + definitions_with_bullet
         return '\n'.join(lines)
 
     def json_output(self) -> str:
@@ -83,8 +83,8 @@ class WordInfo:
 
 def _render_section_lead(ss: Section) -> str:
     parts = [
-        f'{ss.part_of_speech}:',
-        ss.word
+        f'[italic]{ss.part_of_speech}:[/]',
+        f'[bold yellow]{ss.word}[/]'
     ]
     if ss.gender:
         parts.append(ss.gender)
@@ -95,7 +95,7 @@ def _render_section_lead(ss: Section) -> str:
 
 def _render_section_lead_extras(lead_extras: List[dict]) -> str:
     lead_extra_strings = [
-        f'{le["attribute"]} {le["value"]}'
+        f'[italic]{le["attribute"]}[/] [yellow]{le["value"]}[/]'
         for le in lead_extras
     ]
     return ', '.join(lead_extra_strings)

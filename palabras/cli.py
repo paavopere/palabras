@@ -1,5 +1,7 @@
 import argparse
 
+import rich.console
+
 from . import __version__
 from .core import WordInfo, WiktionaryPageNotFound, LanguageEntryNotFound
 
@@ -39,9 +41,12 @@ def main(args):
     )
     args = parser.parse_args(args)
 
+    console = rich.console.Console()
+
     try:
         word_info = WordInfo.from_search(args.word, revision=args.revision)
-        print(parse(word_info, compact=args.compact, json=args.json))
+        output = parse(word_info, compact=args.compact, json=args.json)
+        console.print(output, crop=False, overflow='ignore')
         return 0
     except (WiktionaryPageNotFound, LanguageEntryNotFound) as exc:
         print(exc)
