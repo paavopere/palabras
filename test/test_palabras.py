@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 from textwrap import dedent
@@ -14,6 +13,27 @@ from palabras.utils import get_siblings_until, get_heading_siblings_on_level
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
+
+EXPECTED_DICT_OLVIDAR = dict(
+    word='olvidar',
+    language='Spanish',
+    definition_sections=[
+        dict(
+            part_of_speech='Verb',
+            word='olvidar',
+            extras=[
+                dict(attribute='first-person singular present', value='olvido'),
+                dict(attribute='first-person singular preterite', value='olvidé'),
+                dict(attribute='past participle', value='olvidado'),
+            ],
+            definitions=[
+                dict(text='(transitive) to forget (be forgotten by)'),
+                dict(text='(reflexive, intransitive) to forget, elude, escape'),
+                dict(text='(with de, reflexive, intransitive) to forget, to leave behind')
+            ]
+        )
+    ]
+)
 
 
 @pytest.fixture()
@@ -171,15 +191,25 @@ def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
 
 def test_cli_compact(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['olvidar', '--compact']
-    palabras.cli.main(args)
-    captured = capsys.readouterr()
     expected = dedent('''
         olvidar
         - (transitive) to forget (be forgotten by)
         - (reflexive, intransitive) to forget, elude, escape
         - (with de, reflexive, intransitive) to forget, to leave behind
     ''').lstrip()
+
+    exitcode = palabras.cli.main(args)
+    captured = capsys.readouterr()
     assert captured.out == expected
+    assert exitcode == 0
+
+
+def test_cli_json(capsys: pytest.CaptureFixture, mocked_request_url_text):
+    args = ['olvidar', '--json']
+    exitcode = palabras.cli.main(args)
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == EXPECTED_DICT_OLVIDAR
+    assert exitcode == 0
 
 
 def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
@@ -445,26 +475,4 @@ def test_minimal_section_empty_lead(mocker):
 
 def test_word_info_to_dict(mocked_request_url_text):
     wi = WordInfo.from_search('olvidar')
-
-    expected = dict(
-        word='olvidar',
-        language='Spanish',
-        definition_sections=[
-            dict(
-                part_of_speech='Verb',
-                word='olvidar',
-                extras=[
-                    dict(attribute='first-person singular present', value='olvido'),
-                    dict(attribute='first-person singular preterite', value='olvidé'),
-                    dict(attribute='past participle', value='olvidado'),
-                ],
-                definitions=[
-                    dict(text='(transitive) to forget (be forgotten by)'),
-                    dict(text='(reflexive, intransitive) to forget, elude, escape'),
-                    dict(text='(with de, reflexive, intransitive) to forget, to leave behind')
-                ]
-            )
-        ]
-    )
-
-    assert wi.to_dict() == expected
+    assert wi.to_dict() == EXPECTED_DICT_OLVIDAR

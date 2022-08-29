@@ -1,4 +1,5 @@
 from __future__ import annotations
+import json
 
 import re
 from dataclasses import dataclass
@@ -67,6 +68,9 @@ class WordInfo:
         ]
         lines = [self.word] + definitions_with_bullet
         return '\n'.join(lines)
+
+    def json_output(self) -> str:
+        return json.dumps(self.to_dict(), indent=2)
 
     def to_dict(self) -> dict:
         """Everything related to this WordInfo object as a dict"""
