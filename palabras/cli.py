@@ -1,6 +1,6 @@
 import argparse
 
-from .core import WordInfo, WiktionaryPageNotFound, WiktionarySectionNotFound
+from .core import WordInfo, WiktionaryPageNotFound, LanguageEntryNotFound
 
 
 def main(args):
@@ -31,7 +31,7 @@ def main(args):
         word_info = WordInfo.from_search(args.word, revision=args.revision)
         print(parse(word_info, compact=args.compact))
         return 0
-    except (WiktionaryPageNotFound, WiktionarySectionNotFound) as exc:
+    except (WiktionaryPageNotFound, LanguageEntryNotFound) as exc:
         print(exc)
         return 1
 

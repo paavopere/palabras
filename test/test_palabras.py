@@ -9,7 +9,7 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import Subsection, WiktionaryPage, WordInfo
+from palabras.core import Section, WiktionaryPage, WordInfo
 from palabras.utils import get_siblings_until, get_heading_siblings_on_level
 
 
@@ -63,10 +63,10 @@ def test_page_equalities(mocked_request_url_text):
 def test_eqs_with_other_types(mocked_request_url_text):
     word = 'olvidar'
     page = WiktionaryPage(word)
-    section = page.get_section('Spanish')
-    wi = WordInfo(section)
+    entry = page.get_entry('Spanish')
+    wi = WordInfo(entry)
     assert page != 'foo'
-    assert section != 'foo'
+    assert entry != 'foo'
     assert wi != 'foo'
 
 
@@ -90,30 +90,31 @@ def test_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text
     assert expected_contains in page
 
 
-def test_spanish_section_type(mocked_request_url_text):
+def test_spanish_entry_type(mocked_request_url_text):
     word = 'culpar'
-    result = WiktionaryPage(word).get_spanish_section()
-    assert isinstance(result, palabras.core.WiktionaryPageSection)
+    result = WiktionaryPage(word).get_spanish_entry()
+    assert isinstance(result, palabras.core.LanguageEntry)
 
 
 def test_no_spanish_definition(mocked_request_url_text):
     word = 'kauppa'  # a word that has Wiktionary page but no Spanish definition
-    with pytest.raises(palabras.core.WiktionarySectionNotFound):
-        WiktionaryPage(word).get_spanish_section()
+    with pytest.raises(palabras.core.LanguageEntryNotFound):
+        WiktionaryPage(word).get_spanish_entry()
 
 
-def test_spanish_section_does_not_contain_portuguese(mocked_request_url_text):
+def test_spanish_entry_does_not_contain_portuguese(mocked_request_url_text):
     word = 'culpar'
     portuguese_conjugation = 'culpou'  # Portuguese 3rd person preterite
-    section = WiktionaryPage(word).get_spanish_section()
-    assert portuguese_conjugation not in section
+    spanish_entry = WiktionaryPage(word).get_spanish_entry()
+    assert portuguese_conjugation not in spanish_entry
 
 
+# TODO remove?
 def test_definition_list_item_to_str(mocked_request_url_text):
     li = BeautifulSoup('''
     <li>parse <a href="foo">this</a><dl><dd><span>Whatever</span>...</dd></dl></li>
     ''', features='html.parser').li
-    str_definition = palabras.core.Subsection.definition_list_item_to_str(li)
+    str_definition = palabras.core.Section.definition_list_item_to_str(li)
     assert str_definition == 'parse this'
 
 
@@ -245,11 +246,11 @@ def test_cli_nonexistent_page(capsys: pytest.CaptureFixture, mocked_request_url_
     assert exitcode == 1
 
 
-def test_cli_non_spanish_section(capsys: pytest.CaptureFixture, mocked_request_url_text):
+def test_cli_no_spanish_entry(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['moikka']
     exitcode = palabras.cli.main(args)
     captured = capsys.readouterr()
-    expected = 'No Spanish entry found from Wiktionary page\n'
+    expected = 'No Spanish entry found from page\n'
     assert captured.out == expected
     assert exitcode == 1
 
@@ -299,20 +300,19 @@ def test_page_object_attributes(mocked_request_url_text):
     assert page.revision == revision
 
 
-def test_get_subsections_len_and_type(mocked_request_url_text):
+def test_sections_len_and_types(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    section = page.get_spanish_section()
-    subsections = section.get_subsections()
-    assert len(subsections) > 0  # this page has sections
-    for subsection in subsections:
-        assert isinstance(subsection, Subsection)
+    entry = page.get_spanish_entry()
+    sections = entry.sections
+    assert len(sections) > 0  # this page has sections
+    for s in sections:
+        assert isinstance(s, Section)
 
 
-def test_get_subsections_titles(mocked_request_url_text):
+def test_section_titles(mocked_request_url_text):
     page = WiktionaryPage('empleado', revision=68396093)
-    section = page.get_spanish_section()
-    subsections = section.get_subsections()
-    titles = [ss.title for ss in subsections]
+    entry = page.get_spanish_entry()
+    titles = [s.title for s in entry.sections]
     assert titles == [
         'Etymology',
         'Pronunciation',
@@ -323,19 +323,19 @@ def test_get_subsections_titles(mocked_request_url_text):
     ]
 
 
-def test_get_specific_subsection(mocked_request_url_text):
+def test_get_specific_section(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    section = page.get_spanish_section()
-    subsection_adjective = section.get_subsection('Adjective')
-    assert isinstance(subsection_adjective, Subsection)
-    assert subsection_adjective.title == 'Adjective'
+    entry = page.get_spanish_entry()
+    section_adjective = entry.get_section('Adjective')
+    assert isinstance(section_adjective, Section)
+    assert section_adjective.title == 'Adjective'
 
 
-def test_get_nonexistent_subsection(mocked_request_url_text):
+def test_get_nonexistent_section(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    section = page.get_spanish_section()
+    entry = page.get_spanish_entry()
     with pytest.raises(KeyError, match='No section with title:'):
-        section.get_subsection('Nonexistent section')
+        entry.get_section('Nonexistent section')
 
 
 def test_get_heading_siblings_on_level():
@@ -376,39 +376,39 @@ def test_page_repr(mocked_request_url_text):
         == "WiktionaryPage('empleado', revision=62175311)"
 
 
-def test_section_repr(mocked_request_url_text):
+def test_entry_repr(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    section = page.get_section('Spanish')
-    assert repr(section) == "<WiktionaryPage('empleado') → 'Spanish'>"
+    entry = page.get_entry('Spanish')
+    assert repr(entry) == "<WiktionaryPage('empleado') → 'Spanish'>"
 
 
-def test_subsection_repr(mocked_request_url_text):
+def test_section_repr(mocked_request_url_text):
     page = WiktionaryPage('ser')
-    section = page.get_section('Spanish')
-    subsection = section.get_subsection('Verb')
-    assert repr(subsection) == "<WiktionaryPage('ser') → 'Spanish' → 'Verb'>"
+    entry = page.get_entry('Spanish')
+    entry = entry.get_section('Verb')
+    assert repr(entry) == "<WiktionaryPage('ser') → 'Spanish' → 'Verb'>"
 
 
-def test_subsection_raises_on_invalid_parent():
+def test_section_raises_on_invalid_parent():
     placeholder_soup = BeautifulSoup('<a>foo</a>', features='html.parser')
     page = WiktionaryPage('ser')
 
-    # get a valid subsection from the page
-    ok_subsection = page.get_section('Spanish').get_subsections()[0]
+    # get a valid section from the page
+    ok_section = page.get_entry('Spanish').sections[0]
 
-    # parent cannot be a Subsection object
+    # parent cannot be a Section object
     with pytest.raises(TypeError):
-        Subsection(parent=ok_subsection, soup=placeholder_soup)
+        Section(parent=ok_section, soup=placeholder_soup)
 
     # parent cannot be None
     with pytest.raises(TypeError):
-        Subsection(parent=None, soup=placeholder_soup)
+        Section(parent=None, soup=placeholder_soup)
 
 
-def test_minimal_subsection_lead(mocker):
+def test_minimal_section_lead(mocker):
     mock_html = '''
-    <h2><span id="SectionTitle"></span></h2>
-    <h3><span class="mw-headline">SubsectionTitle</span></h3>
+    <h2><span id="EntryTitle"></span></h2>
+    <h3><span class="mw-headline">SectionTitle</span></h3>
     <p>
         <span class="headword">headword</span>
         (<i>an attribute</i><b>a value</b>)
@@ -417,30 +417,30 @@ def test_minimal_subsection_lead(mocker):
     mocker.patch('palabras.core.WiktionaryPage.get_page_html', return_value=mock_html)
 
     page = WiktionaryPage('foo')
-    section = page.get_section('SectionTitle')
-    subsection = section.get_subsection('SubsectionTitle')
-    assert subsection.word == 'headword'
-    assert subsection.lead_extras == [{'attribute': 'an attribute', 'value': 'a value'}]
+    entry = page.get_entry('EntryTitle')
+    section = entry.get_section('SectionTitle')
+    assert section.word == 'headword'
+    assert section.lead_extras == [{'attribute': 'an attribute', 'value': 'a value'}]
 
 
-def test_minimal_subsection_empty_lead(mocker):
-    # mock to create page with a minimal HTML that doesn't have <p> under subsection
+def test_minimal_section_empty_lead(mocker):
+    # mock to create page with a minimal HTML that doesn't have <p> under section
     mock_html = '''
-    <h2><span id="SectionTitle"></span></h2>
-        <h3><span class="mw-headline">SubsectionTitle</span></h3>
+    <h2><span id="EntryTitle"></span></h2>
+        <h3><span class="mw-headline">SectionTitle</span></h3>
     '''
     mocker.patch('palabras.core.WiktionaryPage.get_page_html', return_value=mock_html)
 
-    # create a subsection through a page object
-    subsection = (
+    # create a section through a page object
+    section = (
         WiktionaryPage('foo')
+        .get_entry('EntryTitle')
         .get_section('SectionTitle')
-        .get_subsection('SubsectionTitle')
     )
 
-    assert subsection.word == ''
-    assert subsection.lead_extras == []
-    assert subsection.to_dict() == {}
+    assert section.word == ''
+    assert section.lead_extras == []
+    assert section.to_dict() == {}
 
 
 def test_word_info_to_dict(mocked_request_url_text):
@@ -449,7 +449,7 @@ def test_word_info_to_dict(mocked_request_url_text):
     expected = dict(
         word='olvidar',
         language='Spanish',
-        definition_subsections=[
+        definition_sections=[
             dict(
                 part_of_speech='Verb',
                 word='olvidar',

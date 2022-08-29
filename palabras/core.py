@@ -16,32 +16,31 @@ class WiktionaryPageNotFound(LookupError):
     pass
 
 
-class WiktionarySectionNotFound(LookupError):
+class LanguageEntryNotFound(LookupError):
     pass
 
 
 @dataclass
 class WordInfo:
     LANGUAGE = 'Spanish'
-    page_section: WiktionaryPageSection
+    entry: LanguageEntry
 
     @classmethod
     def from_search(cls, word: str, *, revision: Optional[int] = None):
-        section = WiktionaryPage(word, revision).get_section(cls.LANGUAGE)
-        return cls(page_section=section)
+        entry = WiktionaryPage(word, revision).get_entry(cls.LANGUAGE)
+        return cls(entry=entry)
 
     @property
     def word(self):
-        return self.page_section.page.word
+        return self.entry.page.word
 
     @property
     def definition_strings(self):
-        return [d.text for d in self.page_section.definitions]
+        return [d.text for d in self.entry.definitions]
 
-    # TODO revise naming
     @property
-    def definition_subsections(self) -> List[Subsection]:
-        return self.page_section.get_definition_subsections()
+    def definition_sections(self) -> List[Section]:
+        return self.entry.get_definition_sections()
 
     def definition_output(self) -> str:
         """
@@ -49,13 +48,12 @@ class WordInfo:
         corresponding part of speech
         """
         outputs = []
-        for subsection in self.page_section.get_subsections():
-            if subsection.has_definitions():
-                sub_output = (
-                    f'{_render_subsection_lead(subsection)}\n'
-                    f'{render_list(d.to_str() for d in subsection.definitions)}'
+        for section in self.entry.sections:
+            if section.has_definitions():
+                outputs.append(
+                    f'{_render_section_lead(section)}\n'
+                    f'{render_list(d.to_str() for d in section.definitions)}'
                 )
-                outputs.append(sub_output)
         return '\n\n'.join(outputs)
 
     def compact_definition_output(self) -> str:
@@ -65,7 +63,7 @@ class WordInfo:
         """
         definitions_with_bullet = [
             f'- {d.to_str()}'
-            for d in self.page_section.definitions
+            for d in self.entry.definitions
         ]
         lines = [self.word] + definitions_with_bullet
         return '\n'.join(lines)
@@ -75,11 +73,11 @@ class WordInfo:
         return dict(
             word=self.word,
             language=self.LANGUAGE,
-            definition_subsections=[d.to_dict() for d in self.definition_subsections]
+            definition_sections=[d.to_dict() for d in self.definition_sections]
         )
 
 
-def _render_subsection_lead(ss: Subsection) -> str:
+def _render_section_lead(ss: Section) -> str:
     parts = [
         f'{ss.part_of_speech}:',
         ss.word
@@ -87,11 +85,11 @@ def _render_subsection_lead(ss: Subsection) -> str:
     if ss.gender:
         parts.append(ss.gender)
     if ss.lead_extras:
-        parts.append(f'({_render_subsection_lead_extras(ss.lead_extras)})')
+        parts.append(f'({_render_section_lead_extras(ss.lead_extras)})')
     return ' '.join(parts)
 
 
-def _render_subsection_lead_extras(lead_extras: List[dict]) -> str:
+def _render_section_lead_extras(lead_extras: List[dict]) -> str:
     lead_extra_strings = [
         f'{le["attribute"]} {le["value"]}'
         for le in lead_extras
@@ -142,45 +140,45 @@ class WiktionaryPage:
             and self.soup == other.soup
         )
 
-    def get_spanish_section(self) -> WiktionaryPageSection:
-        return self.get_section(language='Spanish')
+    def get_spanish_entry(self) -> LanguageEntry:
+        return self.get_entry(language='Spanish')
 
-    def get_section(self, language: str):
-        return WiktionaryPageSection(
-            soup=_extract_language_section(self.soup, language=language),
+    def get_entry(self, language: str) -> LanguageEntry:
+        return LanguageEntry(
+            soup=_extract_language_entry(self.soup, language=language),
             page=self
         )
 
 
-def _extract_language_section(page_soup: BeautifulSoup, language: str) -> BeautifulSoup:
+def _extract_language_entry(page_soup: BeautifulSoup, language: str) -> BeautifulSoup:
     """
-    Get a new BeautifulSoup object that only has the tags from the section that matches
+    Get a new BeautifulSoup object that only has the tags from the entry that matches
     `language`.
     """
-    tags = _language_section_tags(page_soup, language)
+    tags = _language_entry_tags(page_soup, language)
     return tags_to_soup(tags)
 
 
-def _language_section_tags(page_soup: BeautifulSoup, language: str) -> List[PageElement]:
+def _language_entry_tags(page_soup: BeautifulSoup, language: str) -> List[PageElement]:
     """
-    Get a list of all BeautifulSoup elements in the logical section that matches `language`.
+    Get a list of all BeautifulSoup elements since under the heading that matches `language`.
     """
-    start_tag = _language_section_start_tag(page_soup, language)
+    start_tag = _entry_start_tag(page_soup, language)
     return get_heading_siblings_on_level(start_tag)
 
 
-def _language_section_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.Tag:
-    section_id_tag: bs4.Tag = page_soup.find(id=language)
-    if section_id_tag is None:
-        raise WiktionarySectionNotFound('No Spanish entry found from Wiktionary page')
-    start_tag = section_id_tag.parent
+def _entry_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.Tag:
+    id_tag: bs4.Tag = page_soup.find(id=language)
+    if id_tag is None:
+        raise LanguageEntryNotFound(f'No {language} entry found from page')
+    start_tag = id_tag.parent
     assert start_tag.name == 'h2'
     return start_tag
 
 
-class WiktionaryPageSection:
+class LanguageEntry:
 
-    # TODO clear up the hierarchy and inheritance between WiktionaryPageSection and Subsection.
+    # TODO clear up the hierarchy and inheritance between LanguageEntry and Section.
 
     def __init__(self, soup: BeautifulSoup, page: WiktionaryPage):
         # self.title = title
@@ -205,27 +203,28 @@ class WiktionaryPageSection:
             and self.soup == other.soup
         )
 
-    def get_subsections(self, level='h3') -> List[Subsection]:
+    @property
+    def sections(self) -> List[Section]:
+        level = 'h3'
         subheadings = self.soup.find_all(level)
         tag_sets = [get_heading_siblings_on_level(sh) for sh in subheadings]
         subsoups = [tags_to_soup(tags) for tags in tag_sets]
-        return [Subsection(parent=self, soup=subsoup) for subsoup in subsoups]
+        return [Section(parent=self, soup=subsoup) for subsoup in subsoups]
 
-    def get_subsection(self, title, *, level='h3') -> Subsection:
-        subsections = self.get_subsections(level=level)
-        for ss in subsections:
+    def get_section(self, title) -> Section:
+        for ss in self.sections:
             if ss.title == title:
                 return ss
         else:
             raise KeyError(f'No section with title: {title}')
 
-    def get_definition_subsections(self, level='h3') -> List[Subsection]:
-        return [sub for sub in self.get_subsections(level=level) if sub.has_definitions()]
+    def get_definition_sections(self) -> List[Section]:
+        return [sub for sub in self.sections if sub.has_definitions()]
 
     @property
     def definitions(self) -> List[Definition]:
         definitions_ = []
-        for sub in self.get_definition_subsections():
+        for sub in self.get_definition_sections():
             definitions_.extend(sub.definitions)
         return definitions_
 
@@ -233,12 +232,12 @@ class WiktionaryPageSection:
 _EMPTY_TAG = bs4.Tag(name='empty')
 
 
-class Subsection(WiktionaryPageSection):
+class Section(LanguageEntry):
 
-    def __init__(self, parent: WiktionaryPageSection, soup: BeautifulSoup):
+    def __init__(self, parent: LanguageEntry, soup: BeautifulSoup):
         self.parent = parent
-        if not isinstance(parent, WiktionaryPageSection) or isinstance(parent, Subsection):
-            raise TypeError('parent has to be WiktionaryPageSection and cannot be Subsection')
+        if not isinstance(parent, LanguageEntry) or isinstance(parent, Section):
+            raise TypeError('parent has to be LanguageEntry and cannot be Section')
         self.soup = soup
 
     def __repr__(self):
@@ -301,7 +300,7 @@ class Subsection(WiktionaryPageSection):
         return [
             Definition(text=self.definition_list_item_to_str(definition_list_item),
                        extras=None,
-                       subsection=self)
+                       section=self)
             for definition_list_item in self._definition_list_items()
         ]
 
@@ -338,7 +337,7 @@ class Subsection(WiktionaryPageSection):
 class Definition:
     text: str
     extras: Optional[dict]  # we would put synonyms, antonyms, usage examples, etc. here
-    subsection: Subsection
+    section: Section
 
     def to_str(self) -> str:
         return self.text
