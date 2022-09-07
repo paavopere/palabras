@@ -10,7 +10,7 @@
 Call from command line like this:
 
 ```
-python -m palabras ser
+palabras ser
 ```
 
 ```
@@ -28,7 +28,7 @@ Noun: ser m (plural seres)
 For more compact output:
 
 ```
-python -m palabras ser --compact
+palabras ser --compact
 ```
 
 ```

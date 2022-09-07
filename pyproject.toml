@@ -26,10 +26,11 @@ test = [
     "flake8",
 ]
 
+[project.scripts]
+palabras = "palabras:__main__"
 
 [project.urls]
 Home = "https://github.com/paavopere/palabras"
-
 
 # tox can be used locally
 # there is also a GitHub workflow in .github/workflows/test.yml that runs similar commands
