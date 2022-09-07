@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 from textwrap import dedent
@@ -9,12 +8,32 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import (
-    Subsection, WiktionaryPage, WordInfo, get_heading_siblings_on_level, get_siblings_until
-)
+from palabras.core import Section, WiktionaryPage, WordInfo
+from palabras.utils import get_siblings_until, get_heading_siblings_on_level
 
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
+
+EXPECTED_DICT_OLVIDAR = dict(
+    word='olvidar',
+    language='Spanish',
+    definition_sections=[
+        dict(
+            part_of_speech='Verb',
+            word='olvidar',
+            extras=[
+                dict(attribute='first-person singular present', value='olvido'),
+                dict(attribute='first-person singular preterite', value='olvidé'),
+                dict(attribute='past participle', value='olvidado'),
+            ],
+            definitions=[
+                dict(text='(transitive) to forget (be forgotten by)'),
+                dict(text='(reflexive, intransitive) to forget, elude, escape'),
+                dict(text='(with de, reflexive, intransitive) to forget, to leave behind')
+            ]
+        )
+    ]
+)
 
 
 @pytest.fixture()
@@ -28,21 +47,15 @@ def mocked_request_url_text(mocker: MockerFixture):
     mocker.patch('palabras.core.request_url_text', side_effect=lambda url: mock_cache[url])
 
 
-def test_get_word_info_return_type(mocked_request_url_text):
-    word = 'despacito'
-    wi = palabras.core.get_word_info(word)
-    assert isinstance(wi, palabras.core.WordInfo)
-
-
-def test_get_word_info_from_search_return_type(mocked_request_url_text):
+def test_word_info_from_search_return_type(mocked_request_url_text):
     word = 'despacito'
     wi = WordInfo.from_search(word)
     assert isinstance(wi, palabras.core.WordInfo)
 
 
-def test_get_word_info_equals_but_is_not_word_info_from_search(mocked_request_url_text):
+def test_word_info_equals_but_not_is(mocked_request_url_text):
     word = 'despacito'
-    wi1 = palabras.core.get_word_info(word)
+    wi1 = WordInfo.from_search(word)
     wi2 = WordInfo.from_search(word)
     assert wi1 == wi2
     assert wi1 is not wi2
@@ -70,10 +83,10 @@ def test_page_equalities(mocked_request_url_text):
 def test_eqs_with_other_types(mocked_request_url_text):
     word = 'olvidar'
     page = WiktionaryPage(word)
-    section = page.get_section('Spanish')
-    wi = WordInfo(section)
+    entry = page.get_entry('Spanish')
+    wi = WordInfo(entry)
     assert page != 'foo'
-    assert section != 'foo'
+    assert entry != 'foo'
     assert wi != 'foo'
 
 
@@ -97,44 +110,45 @@ def test_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text
     assert expected_contains in page
 
 
-def test_spanish_section_type(mocked_request_url_text):
+def test_spanish_entry_type(mocked_request_url_text):
     word = 'culpar'
-    result = WiktionaryPage(word).get_spanish_section()
-    assert isinstance(result, palabras.core.WiktionaryPageSection)
+    result = WiktionaryPage(word).get_spanish_entry()
+    assert isinstance(result, palabras.core.LanguageEntry)
 
 
 def test_no_spanish_definition(mocked_request_url_text):
     word = 'kauppa'  # a word that has Wiktionary page but no Spanish definition
-    with pytest.raises(palabras.core.WiktionarySectionNotFound):
-        WiktionaryPage(word).get_spanish_section()
+    with pytest.raises(palabras.core.LanguageEntryNotFound):
+        WiktionaryPage(word).get_spanish_entry()
 
 
-def test_spanish_section_does_not_contain_portuguese(mocked_request_url_text):
+def test_spanish_entry_does_not_contain_portuguese(mocked_request_url_text):
     word = 'culpar'
     portuguese_conjugation = 'culpou'  # Portuguese 3rd person preterite
-    section = WiktionaryPage(word).get_spanish_section()
-    assert portuguese_conjugation not in section
+    spanish_entry = WiktionaryPage(word).get_spanish_entry()
+    assert portuguese_conjugation not in spanish_entry
 
 
+# TODO remove?
 def test_definition_list_item_to_str(mocked_request_url_text):
     li = BeautifulSoup('''
     <li>parse <a href="foo">this</a><dl><dd><span>Whatever</span>...</dd></dl></li>
     ''', features='html.parser').li
-    str_definition = palabras.core.Subsection.definition_list_item_to_str(li)
+    str_definition = palabras.core.Section.definition_list_item_to_str(li)
     assert str_definition == 'parse this'
 
 
 def test_lookup_definition(mocked_request_url_text):
     word = 'culpar'
-    word_info = palabras.core.get_word_info(word)
-    assert word_info.definition_strings[0] == 'to blame'
+    wi = WordInfo.from_search(word)
+    assert wi.definition_strings[0] == 'to blame'
 
 
 def test_lookup_definition_complicated(mocked_request_url_text):
     word = 'empleado'  # this word has definitions for adjective, noun, and verb
     revision = 62175311
-    word_info = palabras.core.get_word_info(word, revision=revision)
-    assert word_info.definition_strings == [
+    wi = WordInfo.from_search(word, revision=revision)
+    assert wi.definition_strings == [
         'employed',
         'employee',
         'Masculine singular past participle of emplear.'
@@ -156,9 +170,9 @@ def test_lookup_different_definitions_in_history(mocked_request_url_text):
         '(with de, reflexive, intransitive) to forget, to leave behind'
     ]
 
-    assert palabras.core.get_word_info(word, revision=revision_1).definition_strings \
+    assert WordInfo.from_search(word, revision=revision_1).definition_strings \
         == expected_definitions_1
-    assert palabras.core.get_word_info(word, revision=revision_2).definition_strings \
+    assert WordInfo.from_search(word, revision=revision_2).definition_strings \
         == expected_definitions_2
 
 
@@ -177,15 +191,25 @@ def test_cli(capsys: pytest.CaptureFixture, mocked_request_url_text):
 
 def test_cli_compact(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['olvidar', '--compact']
-    palabras.cli.main(args)
-    captured = capsys.readouterr()
     expected = dedent('''
         olvidar
         - (transitive) to forget (be forgotten by)
         - (reflexive, intransitive) to forget, elude, escape
         - (with de, reflexive, intransitive) to forget, to leave behind
     ''').lstrip()
+
+    exitcode = palabras.cli.main(args)
+    captured = capsys.readouterr()
     assert captured.out == expected
+    assert exitcode == 0
+
+
+def test_cli_json(capsys: pytest.CaptureFixture, mocked_request_url_text):
+    args = ['olvidar', '--json']
+    exitcode = palabras.cli.main(args)
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == EXPECTED_DICT_OLVIDAR
+    assert exitcode == 0
 
 
 def test_cli_revision(capsys: pytest.CaptureFixture, mocked_request_url_text):
@@ -252,11 +276,11 @@ def test_cli_nonexistent_page(capsys: pytest.CaptureFixture, mocked_request_url_
     assert exitcode == 1
 
 
-def test_cli_non_spanish_section(capsys: pytest.CaptureFixture, mocked_request_url_text):
+def test_cli_no_spanish_entry(capsys: pytest.CaptureFixture, mocked_request_url_text):
     args = ['moikka']
     exitcode = palabras.cli.main(args)
     captured = capsys.readouterr()
-    expected = 'No Spanish entry found from Wiktionary page\n'
+    expected = 'No Spanish entry found from page\n'
     assert captured.out == expected
     assert exitcode == 1
 
@@ -306,20 +330,19 @@ def test_page_object_attributes(mocked_request_url_text):
     assert page.revision == revision
 
 
-def test_get_subsections_len_and_type(mocked_request_url_text):
+def test_sections_len_and_types(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    section = page.get_spanish_section()
-    subsections = section.get_subsections()
-    assert len(subsections) > 0  # this page has sections
-    for subsection in subsections:
-        assert isinstance(subsection, Subsection)
+    entry = page.get_spanish_entry()
+    sections = entry.sections
+    assert len(sections) > 0  # this page has sections
+    for s in sections:
+        assert isinstance(s, Section)
 
 
-def test_get_subsections_titles(mocked_request_url_text):
+def test_section_titles(mocked_request_url_text):
     page = WiktionaryPage('empleado', revision=68396093)
-    section = page.get_spanish_section()
-    subsections = section.get_subsections()
-    titles = [ss.title for ss in subsections]
+    entry = page.get_spanish_entry()
+    titles = [s.title for s in entry.sections]
     assert titles == [
         'Etymology',
         'Pronunciation',
@@ -330,19 +353,19 @@ def test_get_subsections_titles(mocked_request_url_text):
     ]
 
 
-def test_get_specific_subsection(mocked_request_url_text):
+def test_get_specific_section(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    section = page.get_spanish_section()
-    subsection_adjective = section.get_subsection('Adjective')
-    assert isinstance(subsection_adjective, Subsection)
-    assert subsection_adjective.title == 'Adjective'
+    entry = page.get_spanish_entry()
+    section_adjective = entry.get_section('Adjective')
+    assert isinstance(section_adjective, Section)
+    assert section_adjective.title == 'Adjective'
 
 
-def test_get_nonexistent_subsection(mocked_request_url_text):
+def test_get_nonexistent_section(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    section = page.get_spanish_section()
+    entry = page.get_spanish_entry()
     with pytest.raises(KeyError, match='No section with title:'):
-        section.get_subsection('Nonexistent section')
+        entry.get_section('Nonexistent section')
 
 
 def test_get_heading_siblings_on_level():
@@ -383,30 +406,73 @@ def test_page_repr(mocked_request_url_text):
         == "WiktionaryPage('empleado', revision=62175311)"
 
 
-def test_section_repr(mocked_request_url_text):
+def test_entry_repr(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    section = page.get_section('Spanish')
-    assert repr(section) == "<WiktionaryPage('empleado') → 'Spanish'>"
+    entry = page.get_entry('Spanish')
+    assert repr(entry) == "<WiktionaryPage('empleado') → 'Spanish'>"
 
 
-def test_subsection_repr(mocked_request_url_text):
+def test_section_repr(mocked_request_url_text):
     page = WiktionaryPage('ser')
-    section = page.get_section('Spanish')
-    subsection = section.get_subsection('Verb')
-    assert repr(subsection) == "<WiktionaryPage('ser') → 'Spanish' → 'Verb'>"
+    entry = page.get_entry('Spanish')
+    entry = entry.get_section('Verb')
+    assert repr(entry) == "<WiktionaryPage('ser') → 'Spanish' → 'Verb'>"
 
 
-def test_subsection_raises_on_invalid_parent():
+def test_section_raises_on_invalid_parent():
     placeholder_soup = BeautifulSoup('<a>foo</a>', features='html.parser')
     page = WiktionaryPage('ser')
 
-    # get a valid subsection from the page
-    ok_subsection = page.get_section('Spanish').get_subsections()[0]
+    # get a valid section from the page
+    ok_section = page.get_entry('Spanish').sections[0]
 
-    # parent cannot be a Subsection object
+    # parent cannot be a Section object
     with pytest.raises(TypeError):
-        Subsection(parent=ok_subsection, soup=placeholder_soup)
+        Section(parent=ok_section, soup=placeholder_soup)
 
     # parent cannot be None
     with pytest.raises(TypeError):
-        Subsection(parent=None, soup=placeholder_soup)
+        Section(parent=None, soup=placeholder_soup)
+
+
+def test_minimal_section_lead(mocker):
+    mock_html = '''
+    <h2><span id="EntryTitle"></span></h2>
+    <h3><span class="mw-headline">SectionTitle</span></h3>
+    <p>
+        <span class="headword">headword</span>
+        (<i>an attribute</i><b>a value</b>)
+    </p>
+    '''
+    mocker.patch('palabras.core.WiktionaryPage.get_page_html', return_value=mock_html)
+
+    page = WiktionaryPage('foo')
+    entry = page.get_entry('EntryTitle')
+    section = entry.get_section('SectionTitle')
+    assert section.word == 'headword'
+    assert section.lead_extras == [{'attribute': 'an attribute', 'value': 'a value'}]
+
+
+def test_minimal_section_empty_lead(mocker):
+    # mock to create page with a minimal HTML that doesn't have <p> under section
+    mock_html = '''
+    <h2><span id="EntryTitle"></span></h2>
+        <h3><span class="mw-headline">SectionTitle</span></h3>
+    '''
+    mocker.patch('palabras.core.WiktionaryPage.get_page_html', return_value=mock_html)
+
+    # create a section through a page object
+    section = (
+        WiktionaryPage('foo')
+        .get_entry('EntryTitle')
+        .get_section('SectionTitle')
+    )
+
+    assert section.word == ''
+    assert section.lead_extras == []
+    assert section.to_dict() == {}
+
+
+def test_word_info_to_dict(mocked_request_url_text):
+    wi = WordInfo.from_search('olvidar')
+    assert wi.to_dict() == EXPECTED_DICT_OLVIDAR

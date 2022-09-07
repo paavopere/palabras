@@ -12,7 +12,8 @@ dynamic = ["version", "description"]
 requires-python = ">=3.8"
 dependencies = [
     "beautifulsoup4",
-    "requests"
+    "requests",
+    "rich",
 ]
 
 [project.optional-dependencies]
@@ -41,7 +42,7 @@ envlist = py38
 
 [testenv]
 deps = -e .[test]
-commands = pytest --cov --cov-report=term-missing
+commands = pytest --cov --cov-report=term-missing --doctest-modules
            mypy palabras --ignore-missing-imports
            flake8
 """
