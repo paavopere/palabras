@@ -476,3 +476,14 @@ def test_minimal_section_empty_lead(mocker):
 def test_word_info_to_dict(mocked_request_url_text):
     wi = WordInfo.from_search('olvidar')
     assert wi.to_dict() == EXPECTED_DICT_OLVIDAR
+
+
+def test_no_conjugation_for_noun():
+    wi = WordInfo.from_search('palabra')
+    assert wi.definition_sections[0].conjugation is None
+
+
+@pytest.mark.xfail
+def test_verb_conjugation_is_dict():
+    wi = WordInfo.from_search('olvidar')
+    assert isinstance(wi.definition_sections[0].conjugation, dict)

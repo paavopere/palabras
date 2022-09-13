@@ -3,7 +3,7 @@ import json
 
 import re
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Type
 
 import requests
 import bs4
@@ -234,6 +234,8 @@ class LanguageEntry:
 
 
 _EMPTY_TAG = bs4.Tag(name='empty')
+HtmlTable = Type[bs4.Tag]
+Conjugation = dict
 
 
 class Section(LanguageEntry):
@@ -273,6 +275,27 @@ class Section(LanguageEntry):
     @property
     def _lead_p(self) -> bs4.Tag:
         return self.soup.p or _EMPTY_TAG
+
+    @property
+    def conjugation(self) -> Optional[Conjugation]:
+        html_table = self._conjugation_html_table
+        if html_table is None:
+            return None
+        return self._conjugation_html_table_to_dict(html_table)
+
+    @property
+    def _conjugation_html_table(self) -> Optional[HtmlTable]:
+        headings = self.soup.find_all('h4')
+        candidate_table_headings = [h for h in headings if h.find(text='Conjugation')]
+        try:
+            table_heading = candidate_table_headings[0]
+        except IndexError:
+            return None
+        return table_heading.find_next('div', class_='NavFrame')
+
+    @staticmethod
+    def _conjugation_html_table_to_dict(html_table: HtmlTable) -> dict:
+        raise NotImplementedError
 
     # TODO write a specific test
     @property
