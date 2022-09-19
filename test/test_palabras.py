@@ -487,3 +487,22 @@ def test_no_conjugation_for_noun():
 def test_verb_conjugation_is_dict():
     wi = WordInfo.from_search('olvidar')
     assert isinstance(wi.definition_sections[0].conjugation, dict)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize('keys, expected', (
+    (['gerund'], 'olvidando'),
+    (['past participle', 'plural', 'feminine'], 'olvidadas'),
+    (['indicative', 'preterite', 'pl2'], 'olvidaréis'),
+    (['subjunctive', 'present', 's2'], {'tú': 'olvides', 'vos': 'olvidés'}),  # tuteo/voseo case
+    (['imperative', 'affirmative', 's1'], None),
+))
+def test_verb_conjugation_content(mocked_request_url_text, keys, expected):
+    wi = WordInfo.from_search('olvidar')
+    conjugation = wi.definition_sections[0].conjugation
+
+    # loop through keys and traverse the conjugation dict structure
+    item = conjugation
+    for key in keys:
+        item = item[key]
+    assert item == expected

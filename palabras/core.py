@@ -234,7 +234,7 @@ class LanguageEntry:
 
 
 _EMPTY_TAG = bs4.Tag(name='empty')
-HtmlTable = Type[bs4.Tag]
+ConjugationTableTag = Type[bs4.Tag]
 Conjugation = dict
 
 
@@ -278,13 +278,13 @@ class Section(LanguageEntry):
 
     @property
     def conjugation(self) -> Optional[Conjugation]:
-        html_table = self._conjugation_html_table
-        if html_table is None:
+        table_tag = self._conjugation_table_tag
+        if table_tag is None:
             return None
-        return self._conjugation_html_table_to_dict(html_table)
+        return self._conjugation_table_tag_to_dict(table_tag)
 
     @property
-    def _conjugation_html_table(self) -> Optional[HtmlTable]:
+    def _conjugation_table_tag(self) -> Optional[ConjugationTableTag]:
         headings = self.soup.find_all('h4')
         candidate_table_headings = [h for h in headings if h.find(text='Conjugation')]
         try:
@@ -294,7 +294,7 @@ class Section(LanguageEntry):
         return table_heading.find_next('div', class_='NavFrame')
 
     @staticmethod
-    def _conjugation_html_table_to_dict(html_table: HtmlTable) -> dict:
+    def _conjugation_table_tag_to_dict(html_table: ConjugationTableTag) -> dict:
         raise NotImplementedError
 
     # TODO write a specific test
