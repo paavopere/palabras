@@ -286,7 +286,7 @@ class Section(LanguageEntry):
     @property
     def _conjugation_table_tag(self) -> Optional[ConjugationTableTag]:
         headings = self.soup.find_all('h4')
-        candidate_table_headings = [h for h in headings if h.find(text='Conjugation')]
+        candidate_table_headings = [h for h in headings if h.find(string='Conjugation')]
         try:
             table_heading = candidate_table_headings[0]
         except IndexError:
