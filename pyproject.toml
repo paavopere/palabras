@@ -43,7 +43,10 @@ envlist = py38
 
 [testenv]
 deps = -e .[test]
-commands = pytest --cov --cov-report=term-missing --doctest-modules
+commands = pytest
            mypy palabras --ignore-missing-imports
            flake8
 """
+
+[tool.pytest.ini_options]
+addopts = "--cov=palabras --cov-report=term-missing --doctest-modules"

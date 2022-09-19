@@ -285,6 +285,23 @@ def test_cli_no_spanish_entry(capsys: pytest.CaptureFixture, mocked_request_url_
     assert exitcode == 1
 
 
+def test_main(capsys: pytest.CaptureFixture, mocker):
+    """
+    A little bit more opaque setup to test if we get expected output also by running __main__.py
+    with mocked sys.argv
+    """
+    mocker.patch('sys.argv', ['palabras', 'hola'])  # mock cli arguments
+    with pytest.raises(SystemExit) as e:
+        # importing __main__ causes the script to be run
+        from palabras import __main__  # noqa: F401
+    assert e.value.code == 0  # check exitcode
+    captured = capsys.readouterr()
+    assert captured.out == dedent('''
+        Interjection: ¡hola!
+        - hello, hi
+    ''').lstrip()
+
+
 def test_get_next_siblings_until():
     markup = (
         '<h1>hello</h1>'

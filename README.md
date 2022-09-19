@@ -73,7 +73,7 @@ pip install -e '.[test]'
 Run tests, linter, and type checks:
 
 ```
-pytest --cov --cov-report=term-missing
+pytest
 flake8
 mypy palabras --ignore-missing-imports
 ```
