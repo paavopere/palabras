@@ -47,6 +47,27 @@ def mocked_request_url_text(mocker: MockerFixture):
     mocker.patch('palabras.core.request_url_text', side_effect=lambda url: mock_cache[url])
 
 
+@pytest.mark.parametrize('args', [
+    ['-h'],
+    ['-V'],
+    ['olvidar'],
+    ['olvidar', '-r', '66217360'],
+    ['ene', '-r', '68912066'],
+])
+def test_main_exitcode_only(mocker, args):
+    """
+    Simulate calling the CLI with various sets of options and assert that the exitcode is 0.
+
+    If a call is found to cause an unexpected error, throw those parameters here, fix the error,
+    and we have a test to assert that it stays fixed.
+    """
+    mocker.patch('sys.argv', ['palabras'] + args)
+    with pytest.raises(SystemExit) as e:
+        # importing __main__ causes the script to be run
+        from palabras import __main__  # noqa: F401
+    assert e.value.code == 0
+
+
 def test_word_info_from_search_return_type(mocked_request_url_text):
     word = 'despacito'
     wi = WordInfo.from_search(word)
@@ -300,6 +321,7 @@ def test_main(capsys: pytest.CaptureFixture, mocker):
         Interjection: ¡hola!
         - hello, hi
     ''').lstrip()
+
 
 
 def test_get_next_siblings_until():
