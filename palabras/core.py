@@ -94,10 +94,12 @@ def _render_section_lead(ss: Section) -> str:
 
 
 def _render_section_lead_extras(lead_extras: List[dict]) -> str:
-    lead_extra_strings = [
-        f'[italic]{le["attribute"]}[/] [yellow]{le["value"]}[/]'
-        for le in lead_extras
-    ]
+    lead_extra_strings = []
+    for le in lead_extras:
+        if 'value' in le:
+            lead_extra_strings.append(f'[italic]{le["attribute"]}[/] [yellow]{le["value"]}[/]')
+        else:
+            lead_extra_strings.append(f'[italic]{le["attribute"]}[/]')
     return ', '.join(lead_extra_strings)
 
 
@@ -307,6 +309,9 @@ class Section(LanguageEntry):
 
     @property
     def lead_extras(self) -> List[dict]:
+        """
+        Extract attributes from inside parentheses on the lead line (after the word).
+        """
         word_tag = self._word_tag
         opening_parenthesis = word_tag.find_next_sibling(string=re.compile(r'\(')) or _EMPTY_TAG
 
@@ -315,8 +320,10 @@ class Section(LanguageEntry):
         L = []
         for attribute_tag in opening_parenthesis.find_next_siblings('i'):
             value_tag = attribute_tag.find_next_sibling('b')
-            L.append({'attribute': attribute_tag.text,
-                      'value': value_tag.text})
+            D = {'attribute': attribute_tag.text}
+            if value_tag:  # only try to extract text if the value tab exists
+                D['value'] = value_tag.text
+            L.append(D)
         return L
 
     @property
