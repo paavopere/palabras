@@ -1,4 +1,5 @@
 from __future__ import annotations
+from ctypes import Union
 import json
 
 import re
@@ -411,9 +412,16 @@ class ConjugationTable:
     def _parse_row(tr: bs4.Tag, header: Sequence[str]) -> Tuple[str, dict]:
         row_key = tr.th.get_text().strip()
         value_tags = [td for td in tr.find_all('td')]
-        values = [td.get_text().strip() for td in value_tags]
+        values = [ConjugationTable._parse_value_tag(td) for td in value_tags]
         values_dict = {h: v for h, v in zip(header, values)}
         return row_key, values_dict
+
+    @staticmethod
+    def _parse_value_tag(td: bs4.Tag) -> Union[str, dict, None]:
+        text = td.get_text().strip()
+        if text == '':
+            return None
+        return text
 
 
 @dataclass

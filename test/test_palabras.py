@@ -534,7 +534,7 @@ def test_verb_conjugation_is_dict():
     (['indicative', 'future', 'pl2'], 'olvidaréis'),
     pytest.param(['subjunctive', 'present', 's2'], {'tú': 'olvides', 'vos': 'olvidés'},
                  marks=pytest.mark.xfail()),  # tuteo/voseo case
-    pytest.param(['imperative', 'affirmative', 's1'], None, marks=pytest.mark.xfail()),
+    (['imperative', 'affirmative', 's1'], None),
 ))
 def test_verb_conjugation_content(mocked_request_url_text, keys, expected):
     wi = WordInfo.from_search('olvidar')
