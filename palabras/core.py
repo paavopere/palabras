@@ -3,7 +3,7 @@ import json
 
 import re
 from dataclasses import dataclass
-from typing import List, Optional, Type
+from typing import List, Optional, Sequence, Tuple, Type
 
 import requests
 import bs4
@@ -236,7 +236,7 @@ class LanguageEntry:
 
 
 _EMPTY_TAG = bs4.Tag(name='empty')
-ConjugationTableTag = Type[bs4.Tag]
+ConjugationTableDiv = Type[bs4.Tag]
 Conjugation = dict
 
 
@@ -280,13 +280,15 @@ class Section(LanguageEntry):
 
     @property
     def conjugation(self) -> Optional[Conjugation]:
-        table_tag = self._conjugation_table_tag
-        if table_tag is None:
+        # TODO raise NotImplemented error if trying for languages other than Spanish
+        table_root = self._conjugation_table_root()
+        if table_root is None:
             return None
-        return self._conjugation_table_tag_to_dict(table_tag)
 
-    @property
-    def _conjugation_table_tag(self) -> Optional[ConjugationTableTag]:
+        return ConjugationTable(table_root).to_dict()
+
+
+    def _conjugation_table_root(self) -> Optional[ConjugationTableDiv]:
         headings = self.soup.find_all('h4')
         candidate_table_headings = [h for h in headings if h.find(string='Conjugation')]
         try:
@@ -294,10 +296,6 @@ class Section(LanguageEntry):
         except IndexError:
             return None
         return table_heading.find_next('div', class_='NavFrame')
-
-    @staticmethod
-    def _conjugation_table_tag_to_dict(html_table: ConjugationTableTag) -> dict:
-        raise NotImplementedError
 
     # TODO write a specific test
     @property
@@ -365,6 +363,57 @@ class Section(LanguageEntry):
             if e.name not in ('dl', 'ul'):  # exclude nested stuff
                 res.append(e.get_text())
         return ''.join(res).strip()
+
+
+class ConjugationTable:
+
+    _ROW_INDEX_INFINITIVE = 0
+    _ROW_INDEX_GERUND = 1
+    _ROW_SLICE_PAST_PARTICIPLE = slice(3, 5)
+    _ROW_SLICE_INDICATIVE = slice(8, 13)
+    _ROW_SLICE_SUBJUNCTIVE = slice(15, 19)
+    _ROW_SLICE_IMPERATIVE = slice(21, 23)
+
+    def __init__(self, root: ConjugationTableDiv):
+        """
+        Initialize from a "root" tag, a div that contains the conjugation table
+        """
+        self.root = root
+        self.table = self.root.find('table')
+
+
+    def to_dict(self):
+        return {
+            'infinitive': self._parse_simple(self._ROW_INDEX_INFINITIVE),
+            'gerund': self._parse_simple(self._ROW_INDEX_GERUND),
+            'past participle': self._parse_complex(
+                self._ROW_SLICE_PAST_PARTICIPLE, header=('masculine', 'feminine')),
+            'indicative': self._parse_complex(
+                self._ROW_SLICE_INDICATIVE, header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3')),
+            'subjunctive': self._parse_complex(
+                self._ROW_SLICE_SUBJUNCTIVE, header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3')),
+            'imperative': self._parse_complex(
+                self._ROW_SLICE_IMPERATIVE, header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3')),
+        }
+
+    def _parse_simple(self, row_index: int):
+        tag = self.table.tbody.find_all('tr')[row_index].td
+        return tag.get_text().strip()
+
+    def _parse_complex(self, row_slice: slice, header: Sequence[str]):
+        d = {}
+        for tr in self.table.tbody.find_all('tr')[row_slice]:
+            row_key, values_dict = self._parse_row(tr, header)
+            d[row_key] = values_dict
+        return d
+
+    @staticmethod
+    def _parse_row(tr: bs4.Tag, header: Sequence[str]) -> Tuple[str, dict]:
+        row_key = tr.th.get_text().strip()
+        value_tags = [td for td in tr.find_all('td')]
+        values = [td.get_text().strip() for td in value_tags]
+        values_dict = {h: v for h, v in zip(header, values)}
+        return row_key, values_dict
 
 
 @dataclass

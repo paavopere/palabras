@@ -522,19 +522,19 @@ def test_no_conjugation_for_noun():
     assert wi.definition_sections[0].conjugation is None
 
 
-@pytest.mark.xfail
 def test_verb_conjugation_is_dict():
     wi = WordInfo.from_search('olvidar')
     assert isinstance(wi.definition_sections[0].conjugation, dict)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize('keys, expected', (
+    (['infinitive'], 'olvidar'),
     (['gerund'], 'olvidando'),
     (['past participle', 'plural', 'feminine'], 'olvidadas'),
-    (['indicative', 'preterite', 'pl2'], 'olvidaréis'),
-    (['subjunctive', 'present', 's2'], {'tú': 'olvides', 'vos': 'olvidés'}),  # tuteo/voseo case
-    (['imperative', 'affirmative', 's1'], None),
+    (['indicative', 'future', 'pl2'], 'olvidaréis'),
+    pytest.param(['subjunctive', 'present', 's2'], {'tú': 'olvides', 'vos': 'olvidés'},
+                 marks=pytest.mark.xfail()),  # tuteo/voseo case
+    pytest.param(['imperative', 'affirmative', 's1'], None, marks=pytest.mark.xfail()),
 ))
 def test_verb_conjugation_content(mocked_request_url_text, keys, expected):
     wi = WordInfo.from_search('olvidar')
