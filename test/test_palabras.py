@@ -532,8 +532,7 @@ def test_verb_conjugation_is_dict():
     (['gerund'], 'olvidando'),
     (['past participle', 'plural', 'feminine'], 'olvidadas'),
     (['indicative', 'future', 'pl2'], 'olvidaréis'),
-    pytest.param(['subjunctive', 'present', 's2'], {'tú': 'olvides', 'vos': 'olvidés'},
-                 marks=pytest.mark.xfail()),  # tuteo/voseo case
+    (['subjunctive', 'present', 's2'], {'tú': 'olvides', 'vos': 'olvidés'}),  # tuteo/voseo case
     (['imperative', 'affirmative', 's1'], None),
 ))
 def test_verb_conjugation_content(mocked_request_url_text, keys, expected):

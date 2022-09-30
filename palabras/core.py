@@ -418,10 +418,23 @@ class ConjugationTable:
 
     @staticmethod
     def _parse_value_tag(td: bs4.Tag) -> Union[str, dict, None]:
-        text = td.get_text().strip()
-        if text == '':
-            return None
-        return text
+        """
+        Parse a td tag containing one conjugation.
+
+        In the usual case, when the td contains one span, return the text inside it (or None if
+        the text is empty). In the tuteo/voseo case, the td contains 2 spans; their texts are
+        split in a dict.
+        """
+        spans = td.find_all('span')
+        if len(spans) == 1:
+            text = spans[0].get_text().strip() or None
+            return text
+        elif len(spans) > 1:
+            return {
+                'tú': spans[0].get_text().strip(),
+                'vos': spans[1].get_text().strip()
+            }
+
 
 
 @dataclass
