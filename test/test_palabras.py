@@ -121,14 +121,14 @@ def test_get_wiktionary_page_contains_translation(mocked_request_url_text):
     word = 'culpar'
     translation = 'blame'
     page = palabras.core.WiktionaryPage(word)
-    assert translation in page
+    assert translation in str(page.soup)
 
 
 def test_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text):
     word = 'culpar'
     expected_contains = 'culpou'  # Portuguese 3rd person preterite
     page = palabras.core.WiktionaryPage(word)
-    assert expected_contains in page
+    assert expected_contains in str(page.soup)
 
 
 def test_spanish_entry_type(mocked_request_url_text):
@@ -147,7 +147,7 @@ def test_spanish_entry_does_not_contain_portuguese(mocked_request_url_text):
     word = 'culpar'
     portuguese_conjugation = 'culpou'  # Portuguese 3rd person preterite
     spanish_entry = WiktionaryPage(word).get_spanish_entry()
-    assert portuguese_conjugation not in spanish_entry
+    assert portuguese_conjugation not in str(spanish_entry.soup)
 
 
 # TODO remove?
@@ -321,7 +321,6 @@ def test_main(capsys: pytest.CaptureFixture, mocker):
         Interjection: ¡hola!
         - hello, hi
     ''').lstrip()
-
 
 
 def test_get_next_siblings_until():
@@ -519,12 +518,12 @@ def test_word_info_to_dict(mocked_request_url_text):
 
 def test_no_conjugation_for_noun():
     wi = WordInfo.from_search('palabra')
-    assert wi.definition_sections[0].conjugation is None
+    assert wi.sections_with_definitions[0].conjugation is None
 
 
 def test_verb_conjugation_is_dict():
     wi = WordInfo.from_search('olvidar')
-    assert isinstance(wi.definition_sections[0].conjugation, dict)
+    assert isinstance(wi.sections_with_definitions[0].conjugation, dict)
 
 
 @pytest.mark.parametrize('keys, expected', (
@@ -537,7 +536,7 @@ def test_verb_conjugation_is_dict():
 ))
 def test_verb_conjugation_content(mocked_request_url_text, keys, expected):
     wi = WordInfo.from_search('olvidar')
-    conjugation = wi.definition_sections[0].conjugation
+    conjugation = wi.sections_with_definitions[0].conjugation
 
     # loop through keys and traverse the conjugation dict structure
     item = conjugation

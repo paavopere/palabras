@@ -24,30 +24,44 @@ class LanguageEntryNotFound(LookupError):
 
 @dataclass
 class WordInfo:
+    """
+    Information about a word, including its language, part of speech, and definitions.
+    """
     LANGUAGE = 'Spanish'
     entry: LanguageEntry
 
     @classmethod
     def from_search(cls, word: str, *, revision: Optional[int] = None):
+        """
+        Fetch information about a word from Wiktionary and return a WordInfo object.
+
+        Parameters:
+            word (str): The word to search for.
+            revision (Optional[int]): The revision number of the Wiktionary page to use. If not
+                provided, the latest revision will be used.
+        """
         entry = WiktionaryPage(word, revision).get_entry(cls.LANGUAGE)
         return cls(entry=entry)
 
     @property
-    def word(self):
+    def word(self) -> str:
+        """The word represented by this WordInfo object, as a string"""
         return self.entry.page.word
 
     @property
-    def definition_strings(self):
+    def definition_strings(self) -> List[str]:
+        """Definitions of the word as a list of strings"""
         return [d.text for d in self.entry.definitions]
 
     @property
-    def definition_sections(self) -> List[Section]:
-        return self.entry.get_definition_sections()
+    def sections_with_definitions(self) -> List[Section]:
+        """List of Section objects that contain definitions"""
+        return self.entry.get_sections_with_definitions()
 
     def definition_output(self) -> str:
         """
-        Human-readable multiline string with all definitions listed under its
-        corresponding part of speech
+        Human-readable multiline string with all definitions listed under its corresponding part of
+        speech
         """
         outputs = []
         for section in self.entry.sections:
@@ -71,18 +85,43 @@ class WordInfo:
         return '\n'.join(lines)
 
     def json_output(self) -> str:
+        """
+        Return a JSON string representation of all information related to this WordInfo object.
+        """
         return json.dumps(self.to_dict(), indent=2)
 
     def to_dict(self) -> dict:
-        """Everything related to this WordInfo object as a dict"""
+        """
+        Return a dict of all information related to this WordInfo object.
+        """
         return dict(
             word=self.word,
             language=self.LANGUAGE,
-            definition_sections=[d.to_dict() for d in self.definition_sections]
+            definition_sections=[d.to_dict() for d in self.sections_with_definitions]
         )
 
 
 def _render_section_lead(ss: Section) -> str:
+    """
+    Render the lead for a section in a string format, including formatting tags for the `rich`
+    package used to print to command line.
+
+    The lead for a section consists of the part of speech, the word, the gender (if applicable),
+    and any lead extras.
+
+    Parameters:
+        ss (Section): The Section object to render the lead for.
+
+    Returns:
+        str: The rendered lead for the given section.
+
+    Example:
+        >>> section = WiktionaryPage('olvidar').get_entry('Spanish').get_section('Verb')
+        >>> _render_section_lead(section)
+        '[italic]Verb:[/] [bold yellow]olvidar[/] ([italic]first-person singular present[/] \
+[yellow]olvido[/], [italic]first-person singular preterite[/] [yellow]olvidé[/], \
+[italic]past participle[/] [yellow]olvidado[/])'
+    """
     parts = [
         f'[italic]{ss.part_of_speech}:[/]',
         f'[bold yellow]{ss.word}[/]'
@@ -90,27 +129,66 @@ def _render_section_lead(ss: Section) -> str:
     if ss.gender:
         parts.append(ss.gender)
     if ss.lead_extras:
-        parts.append(f'({_render_section_lead_extras(ss.lead_extras)})')
+        lead_extra_strings = _render_section_lead_extras(ss.lead_extras)
+        parts.append(f"({', '.join(lead_extra_strings)})")
     return ' '.join(parts)
 
 
-def _render_section_lead_extras(lead_extras: List[dict]) -> str:
+def _render_section_lead_extras(lead_extras: List[dict]) -> List[str]:
+    """
+    Render the lead extras for a section in a string format, including formatting tags for the
+    `rich` package used to print to command line.
+
+    Lead extras are attributes that are listed after the part of speech and word in the lead for
+    a section.
+
+    Parameters:
+        lead_extras (List[dict]): A list of dictionaries representing the lead extras for a section.
+
+    Returns:
+        List[str]: The rendered lead extras for the given section.
+
+    Example:
+        >>> _render_section_lead_extras([
+        ...     dict(attribute='first-person singular present', value='olvido'),
+        ...     dict(attribute='first-person singular preterite', value='olvidé'),
+        ...     dict(attribute='past participle', value='olvidado'),
+        ... ])
+        ['[italic]first-person singular present[/] [yellow]olvido[/]', \
+'[italic]first-person singular preterite[/] [yellow]olvidé[/]', \
+'[italic]past participle[/] [yellow]olvidado[/]']
+    """
     lead_extra_strings = []
     for le in lead_extras:
         if 'value' in le:
             lead_extra_strings.append(f'[italic]{le["attribute"]}[/] [yellow]{le["value"]}[/]')
         else:
             lead_extra_strings.append(f'[italic]{le["attribute"]}[/]')
-    return ', '.join(lead_extra_strings)
+    return lead_extra_strings
 
 
 class WiktionaryPage:
+    """
+    Represents a page on Wiktionary, with the page content parsed into a BeautifulSoup object in
+    the `soup` attribute.
+
+    Use `get_entry()` to extract a particular LanguageEntry object from the page.
+    """
     word: str
     revision: Optional[int] = None
 
     def __init__(self,
                  word: str,
                  revision: Optional[int] = None):
+        """
+        Initialize a WiktionaryPage object with a word and an optional revision number.
+
+        Parameters:
+            word (str): The word that this Wiktionary page is for.
+            revision (Optional[int]): The revision number of the Wiktionary page to use. This is
+                the `oldid` parameter in the Wiktionary page URL. If not provided, the latest
+                revision will be used.
+        """
         self.word = word
         self.revision = revision
         self.soup = BeautifulSoup(
@@ -126,6 +204,20 @@ class WiktionaryPage:
 
     @staticmethod
     def get_page_html(word, revision=None):
+        """
+        Retrieve the HTML content of the Wiktionary page for the given word and revision.
+
+        Parameters:
+            word (str): The word to retrieve the Wiktionary page for.
+            revision (Optional[int]): The revision number of the Wiktionary page to use. If not
+                provided, the latest revision will be used.
+
+        Returns:
+            str: The HTML content of the Wiktionary page.
+
+        Raises:
+            WiktionaryPageNotFound: If the Wiktionary page for the given word cannot be found.
+        """
         if revision is None:
             url = f'https://en.wiktionary.org/wiki/{word}'
         else:
@@ -135,10 +227,13 @@ class WiktionaryPage:
             raise WiktionaryPageNotFound('No Wiktionary page found')
         return content
 
-    def __contains__(self, other: str) -> bool:
-        return other in str(self.soup)
+    def __eq__(self, other) -> bool:
+        """
+        Check if this WiktionaryPage object is equal to another object.
 
-    def __eq__(self, other):
+        Two WiktionaryPage objects are considered equal if they have the same word, revision
+        number, and the `soup` BeautifulSoup objects are equal.
+        """
         if not isinstance(other, self.__class__):
             return NotImplemented
         return (
@@ -151,13 +246,26 @@ class WiktionaryPage:
         return self.get_entry(language='Spanish')
 
     def get_entry(self, language: str) -> LanguageEntry:
+        """
+        Retrieve the language entry for the given language on this Wiktionary page.
+
+        Parameters:
+            language (str): The language to retrieve the entry for.
+
+        Returns:
+            LanguageEntry: The language entry for the given language on this Wiktionary page.
+
+        Raises:
+            LanguageEntryNotFound: If a language entry for the given language cannot be found on
+                this Wiktionary page.
+        """
         return LanguageEntry(
-            soup=_extract_language_entry(self.soup, language=language),
+            soup=_extract_language_entry_soup(self.soup, language=language),
             page=self
         )
 
 
-def _extract_language_entry(page_soup: BeautifulSoup, language: str) -> BeautifulSoup:
+def _extract_language_entry_soup(page_soup: BeautifulSoup, language: str) -> BeautifulSoup:
     """
     Get a new BeautifulSoup object that only has the tags from the entry that matches
     `language`.
@@ -175,6 +283,10 @@ def _language_entry_tags(page_soup: BeautifulSoup, language: str) -> List[PageEl
 
 
 def _entry_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.Tag:
+    """
+    Find the first `h2` tag in the given BeautifulSoup object representing a Wiktionary page. This
+    is used to locate the beginning of the language entry for the word being searched.
+    """
     id_tag: bs4.Tag = page_soup.find(id=language)
     if id_tag is None:
         raise LanguageEntryNotFound(f'No {language} entry found from page')
@@ -184,7 +296,18 @@ def _entry_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.Tag:
 
 
 class LanguageEntry:
+    """
+    A class representing the information for a single language entry on a Wiktionary page.
 
+    A LanguageEntry object should be generated from a BeautifulSoup object that only contains the
+    parsed HTML for one language (not the full page). `WiktionaryPage.get_entry()` does this with
+    the `_extract_language_entry_soup()` helper.
+
+    You can get the section through the WiktionaryPage like this:
+    >>> entry = WiktionaryPage('empleado').get_entry('Spanish')
+    >>> isinstance(entry, LanguageEntry)
+    True
+    """
     # TODO clear up the hierarchy and inheritance between LanguageEntry and Section.
 
     def __init__(self, soup: BeautifulSoup, page: WiktionaryPage):
@@ -199,9 +322,6 @@ class LanguageEntry:
     def title(self) -> str:
         return self.soup.find(class_='mw-headline').text
 
-    def __contains__(self, other: str) -> bool:
-        return other in str(self.soup)
-
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return NotImplemented
@@ -212,26 +332,44 @@ class LanguageEntry:
 
     @property
     def sections(self) -> List[Section]:
+        """
+        Get a list of Section objects inside this language entry.
+
+        Sections correspond to the subheadings under one language entry on the Wiktionary page.
+        Some, but not all, of the sections are parts of speech: E.g. the page for 'empleado' has
+        sections 'Etymology', 'Pronunciation', 'Adjective', 'Noun', 'Participle', Further reading'.
+        """
         level = 'h3'
         subheadings = self.soup.find_all(level)
         tag_sets = [get_heading_siblings_on_level(sh) for sh in subheadings]
         subsoups = [tags_to_soup(tags) for tags in tag_sets]
         return [Section(parent=self, soup=subsoup) for subsoup in subsoups]
 
-    def get_section(self, title) -> Section:
+    def get_section(self, title: str) -> Section:
+        """
+        Get a specific section by its title (exact string match).
+
+        Example:
+            >>> entry = WiktionaryPage('empleado').get_entry('Spanish')
+            >>> section = entry.get_section('Noun')
+            >>> isinstance(section, Section)
+            True
+        """
         for ss in self.sections:
             if ss.title == title:
                 return ss
         else:
             raise KeyError(f'No section with title: {title}')
 
-    def get_definition_sections(self) -> List[Section]:
+    def get_sections_with_definitions(self) -> List[Section]:
+        """Get a list of all sections that contain any definitions."""
         return [sub for sub in self.sections if sub.has_definitions()]
 
     @property
     def definitions(self) -> List[Definition]:
+        """Get a list of all definitions contained in sections of this LanguageEntry"""
         definitions_ = []
-        for sub in self.get_definition_sections():
+        for sub in self.get_sections_with_definitions():
             definitions_.extend(sub.definitions)
         return definitions_
 
@@ -287,7 +425,6 @@ class Section(LanguageEntry):
             return None
 
         return ConjugationTable(table_root).to_dict()
-
 
     def _conjugation_table_root(self) -> Optional[ConjugationTableDiv]:
         headings = self.soup.find_all('h4')
@@ -382,7 +519,6 @@ class ConjugationTable:
         self.root = root
         self.table = self.root.find('table')
 
-
     def to_dict(self):
         return {
             'infinitive': self._parse_simple(self._ROW_INDEX_INFINITIVE),
@@ -419,7 +555,7 @@ class ConjugationTable:
     @staticmethod
     def _parse_value_tag(td: bs4.Tag) -> Union[str, dict, None]:
         """
-        Parse a td tag containing one conjugation.
+        Parse a <td> tag containing one conjugation.
 
         In the usual case, when the td contains one span, return the text inside it (or None if
         the text is empty). In the tuteo/voseo case, the td contains 2 spans; their texts are
@@ -434,7 +570,6 @@ class ConjugationTable:
                 'tú': spans[0].get_text().strip(),
                 'vos': spans[1].get_text().strip()
             }
-
 
 
 @dataclass
