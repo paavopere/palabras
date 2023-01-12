@@ -1,10 +1,9 @@
 from __future__ import annotations
-from ctypes import Union
 import json
 
 import re
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple, Type
+from typing import Any, List, Optional, Sequence, Tuple, Type, Union
 
 import requests
 import bs4
@@ -385,9 +384,9 @@ class Section(LanguageEntry):
     def __repr__(self):
         return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         if self.has_definitions():
-            D = dict(
+            D: dict[str, Any] = dict(
                 part_of_speech=self.part_of_speech,
                 word=self.word,
                 extras=self.lead_extras,
@@ -579,6 +578,8 @@ class ConjugationTable:
                 'tú': spans[0].get_text().strip(),
                 'vos': spans[1].get_text().strip(),
             }
+        else:
+            return None
 
 
 @dataclass
