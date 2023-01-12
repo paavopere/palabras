@@ -27,6 +27,7 @@ class WordInfo:
     """
     Information about a word, including its language, part of speech, and definitions.
     """
+
     LANGUAGE = 'Spanish'
     entry: LanguageEntry
 
@@ -77,10 +78,7 @@ class WordInfo:
         Human-readable multiline string with word and all definitions listed
         one after one another
         """
-        definitions_with_bullet = [
-            f'- {d.to_str()}'
-            for d in self.entry.definitions
-        ]
+        definitions_with_bullet = [f'- {d.to_str()}' for d in self.entry.definitions]
         lines = [f'[bold yellow]{self.word}[/]'] + definitions_with_bullet
         return '\n'.join(lines)
 
@@ -97,7 +95,7 @@ class WordInfo:
         return dict(
             word=self.word,
             language=self.LANGUAGE,
-            definition_sections=[d.to_dict() for d in self.sections_with_definitions]
+            definition_sections=[d.to_dict() for d in self.sections_with_definitions],
         )
 
 
@@ -122,10 +120,7 @@ def _render_section_lead(ss: Section) -> str:
 [yellow]olvido[/], [italic]first-person singular preterite[/] [yellow]olvidé[/], \
 [italic]past participle[/] [yellow]olvidado[/])'
     """
-    parts = [
-        f'[italic]{ss.part_of_speech}:[/]',
-        f'[bold yellow]{ss.word}[/]'
-    ]
+    parts = [f'[italic]{ss.part_of_speech}:[/]', f'[bold yellow]{ss.word}[/]']
     if ss.gender:
         parts.append(ss.gender)
     if ss.lead_extras:
@@ -161,7 +156,9 @@ def _render_section_lead_extras(lead_extras: List[dict]) -> List[str]:
     lead_extra_strings = []
     for le in lead_extras:
         if 'value' in le:
-            lead_extra_strings.append(f'[italic]{le["attribute"]}[/] [yellow]{le["value"]}[/]')
+            lead_extra_strings.append(
+                f'[italic]{le["attribute"]}[/] [yellow]{le["value"]}[/]'
+            )
         else:
             lead_extra_strings.append(f'[italic]{le["attribute"]}[/]')
     return lead_extra_strings
@@ -174,12 +171,11 @@ class WiktionaryPage:
 
     Use `get_entry()` to extract a particular LanguageEntry object from the page.
     """
+
     word: str
     revision: Optional[int] = None
 
-    def __init__(self,
-                 word: str,
-                 revision: Optional[int] = None):
+    def __init__(self, word: str, revision: Optional[int] = None):
         """
         Initialize a WiktionaryPage object with a word and an optional revision number.
 
@@ -192,15 +188,16 @@ class WiktionaryPage:
         self.word = word
         self.revision = revision
         self.soup = BeautifulSoup(
-            markup=self.get_page_html(word, revision),
-            features='html.parser'
+            markup=self.get_page_html(word, revision), features='html.parser'
         )
 
     def __repr__(self):
         if self.revision is None:
             return f'{self.__class__.__name__}({self.word!r})'
         else:
-            return f'{self.__class__.__name__}({self.word!r}, revision={self.revision!r})'
+            return (
+                f'{self.__class__.__name__}({self.word!r}, revision={self.revision!r})'
+            )
 
     @staticmethod
     def get_page_html(word, revision=None):
@@ -260,12 +257,13 @@ class WiktionaryPage:
                 this Wiktionary page.
         """
         return LanguageEntry(
-            soup=_extract_language_entry_soup(self.soup, language=language),
-            page=self
+            soup=_extract_language_entry_soup(self.soup, language=language), page=self
         )
 
 
-def _extract_language_entry_soup(page_soup: BeautifulSoup, language: str) -> BeautifulSoup:
+def _extract_language_entry_soup(
+    page_soup: BeautifulSoup, language: str
+) -> BeautifulSoup:
     """
     Get a new BeautifulSoup object that only has the tags from the entry that matches
     `language`.
@@ -308,6 +306,7 @@ class LanguageEntry:
     >>> isinstance(entry, LanguageEntry)
     True
     """
+
     # TODO clear up the hierarchy and inheritance between LanguageEntry and Section.
 
     def __init__(self, soup: BeautifulSoup, page: WiktionaryPage):
@@ -325,10 +324,7 @@ class LanguageEntry:
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return (
-            self.page == other.page
-            and self.soup == other.soup
-        )
+        return self.page == other.page and self.soup == other.soup
 
     @property
     def sections(self) -> List[Section]:
@@ -380,7 +376,6 @@ Conjugation = dict
 
 
 class Section(LanguageEntry):
-
     def __init__(self, parent: LanguageEntry, soup: BeautifulSoup):
         self.parent = parent
         if not isinstance(parent, LanguageEntry) or isinstance(parent, Section):
@@ -396,7 +391,7 @@ class Section(LanguageEntry):
                 part_of_speech=self.part_of_speech,
                 word=self.word,
                 extras=self.lead_extras,
-                definitions=[d.to_dict() for d in self.definitions]
+                definitions=[d.to_dict() for d in self.definitions],
             )
             if self.conjugation is not None:
                 D['conjugation'] = self.conjugation
@@ -452,7 +447,9 @@ class Section(LanguageEntry):
         Extract attributes from inside parentheses on the lead line (after the word).
         """
         word_tag = self._word_tag
-        opening_parenthesis = word_tag.find_next_sibling(string=re.compile(r'\(')) or _EMPTY_TAG
+        opening_parenthesis = (
+            word_tag.find_next_sibling(string=re.compile(r'\(')) or _EMPTY_TAG
+        )
 
         # take attributes from <i> tags and corresponding values from the following <b> tag
         # TODO this seems quite fragile
@@ -471,9 +468,11 @@ class Section(LanguageEntry):
         Parse definitions from soup and return them as a list of strings.
         """
         return [
-            Definition(text=self.definition_list_item_to_str(definition_list_item),
-                       extras=None,
-                       section=self)
+            Definition(
+                text=self.definition_list_item_to_str(definition_list_item),
+                extras=None,
+                section=self,
+            )
             for definition_list_item in self._definition_list_items()
         ]
 
@@ -527,13 +526,20 @@ class ConjugationTable:
             'infinitive': self._parse_simple(self._ROW_INDEX_INFINITIVE),
             'gerund': self._parse_simple(self._ROW_INDEX_GERUND),
             'past participle': self._parse_complex(
-                self._ROW_SLICE_PAST_PARTICIPLE, header=('masculine', 'feminine')),
+                self._ROW_SLICE_PAST_PARTICIPLE, header=('masculine', 'feminine')
+            ),
             'indicative': self._parse_complex(
-                self._ROW_SLICE_INDICATIVE, header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3')),
+                self._ROW_SLICE_INDICATIVE,
+                header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3'),
+            ),
             'subjunctive': self._parse_complex(
-                self._ROW_SLICE_SUBJUNCTIVE, header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3')),
+                self._ROW_SLICE_SUBJUNCTIVE,
+                header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3'),
+            ),
             'imperative': self._parse_complex(
-                self._ROW_SLICE_IMPERATIVE, header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3')),
+                self._ROW_SLICE_IMPERATIVE,
+                header=('s1', 's2', 's3', 'pl1', 'pl2', 'pl3'),
+            ),
         }
 
     def _parse_simple(self, row_index: int):
@@ -571,7 +577,7 @@ class ConjugationTable:
         elif len(spans) > 1:
             return {
                 'tú': spans[0].get_text().strip(),
-                'vos': spans[1].get_text().strip()
+                'vos': spans[1].get_text().strip(),
             }
 
 
