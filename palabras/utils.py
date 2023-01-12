@@ -5,9 +5,7 @@ from bs4 import BeautifulSoup
 from bs4.element import PageElement
 
 
-def tags_to_soup(tags: Sequence[bs4.Tag],
-                 *,
-                 features='html.parser') -> BeautifulSoup:
+def tags_to_soup(tags: Sequence[bs4.Tag], *, features='html.parser') -> BeautifulSoup:
     """
     Given a list of tags, create a new BeautifulSoup object from those tags (copying tags to the
     new soup object in order)
@@ -25,15 +23,15 @@ def get_heading_siblings_on_level(element):
     """
     hierarchy = 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
     if element.name not in hierarchy:
-        raise ValueError(
-            f'Element with {element.name} (expected one of {hierarchy})')
+        raise ValueError(f'Element with {element.name} (expected one of {hierarchy})')
 
-    same_and_higher = hierarchy[:hierarchy.index(element.name) + 1]
+    same_and_higher = hierarchy[: hierarchy.index(element.name) + 1]
     return get_siblings_until(element, same_and_higher)
 
 
-def get_siblings_until(element: PageElement,
-                       until: Union[str, Container[str]]) -> List[PageElement]:
+def get_siblings_until(
+    element: PageElement, until: Union[str, Container[str]]
+) -> List[PageElement]:
     """
     Return a list of sibling elements until the next occurrence of a certain tag name (or
     list/tuple/etc. of tag names).

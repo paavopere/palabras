@@ -14,6 +14,123 @@ from palabras.utils import get_siblings_until, get_heading_siblings_on_level
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
 
+EXPECTED_CONJUGATION_OLVIDAR = {
+    'infinitive': 'olvidar',
+    'gerund': 'olvidando',
+    'past participle': {
+        'singular': {
+            'masculine': 'olvidado',
+            'feminine': 'olvidada'
+        },
+        'plural': {
+            'masculine': 'olvidados',
+            'feminine': 'olvidadas'
+        }
+    },
+    'indicative': {
+        'present': {
+            's1': 'olvido',
+            's2': {
+                'tú': 'olvidas',
+                'vos': 'olvidás'
+            },
+            's3': 'olvida',
+            'pl1': 'olvidamos',
+            'pl2': 'olvidáis',
+            'pl3': 'olvidan'
+        },
+        'imperfect': {
+            's1': 'olvidaba',
+            's2': 'olvidabas',
+            's3': 'olvidaba',
+            'pl1': 'olvidábamos',
+            'pl2': 'olvidabais',
+            'pl3': 'olvidaban'
+        },
+        'preterite': {
+            's1': 'olvidé',
+            's2': 'olvidaste',
+            's3': 'olvidó',
+            'pl1': 'olvidamos',
+            'pl2': 'olvidasteis',
+            'pl3': 'olvidaron'
+        },
+        'future': {
+            's1': 'olvidaré',
+            's2': 'olvidarás',
+            's3': 'olvidará',
+            'pl1': 'olvidaremos',
+            'pl2': 'olvidaréis',
+            'pl3': 'olvidarán'
+        },
+        'conditional': {
+            's1': 'olvidaría',
+            's2': 'olvidarías',
+            's3': 'olvidaría',
+            'pl1': 'olvidaríamos',
+            'pl2': 'olvidaríais',
+            'pl3': 'olvidarían'
+        }
+    },
+    'subjunctive': {
+        'present': {
+            's1': 'olvide',
+            's2': {
+                'tú': 'olvides',
+                'vos': 'olvidés'
+            },
+            's3': 'olvide',
+            'pl1': 'olvidemos',
+            'pl2': 'olvidéis',
+            'pl3': 'olviden'
+        },
+        'imperfect(ra)': {
+            's1': 'olvidara',
+            's2': 'olvidaras',
+            's3': 'olvidara',
+            'pl1': 'olvidáramos',
+            'pl2': 'olvidarais',
+            'pl3': 'olvidaran'
+        },
+        'imperfect(se)': {
+            's1': 'olvidase',
+            's2': 'olvidases',
+            's3': 'olvidase',
+            'pl1': 'olvidásemos',
+            'pl2': 'olvidaseis',
+            'pl3': 'olvidasen'
+        },
+        'future1': {
+            's1': 'olvidare',
+            's2': 'olvidares',
+            's3': 'olvidare',
+            'pl1': 'olvidáremos',
+            'pl2': 'olvidareis',
+            'pl3': 'olvidaren'
+        }
+    },
+    'imperative': {
+        'affirmative': {
+            's1': None,
+            's2': {
+                'tú': 'olvida',
+                'vos': 'olvidá'
+            },
+            's3': 'olvide',
+            'pl1': 'olvidemos',
+            'pl2': 'olvidad',
+            'pl3': 'olviden'
+        },
+        'negative': {
+            's1': None,
+            's2': 'no olvides',
+            's3': 'no olvide',
+            'pl1': 'no olvidemos',
+            'pl2': 'no olvidéis',
+            'pl3': 'no olviden'
+        }
+    }
+}
 EXPECTED_DICT_OLVIDAR = dict(
     word='olvidar',
     language='Spanish',
@@ -30,7 +147,8 @@ EXPECTED_DICT_OLVIDAR = dict(
                 dict(text='(transitive) to forget (be forgotten by)'),
                 dict(text='(reflexive, intransitive) to forget, elude, escape'),
                 dict(text='(with de, reflexive, intransitive) to forget, to leave behind')
-            ]
+            ],
+            conjugation=EXPECTED_CONJUGATION_OLVIDAR
         )
     ]
 )
@@ -45,6 +163,27 @@ def mocked_request_url_text(mocker: MockerFixture):
     with open(MOCK_CACHE_FILE_PATH) as fp:
         mock_cache: dict = json.load(fp)['url_contents']
     mocker.patch('palabras.core.request_url_text', side_effect=lambda url: mock_cache[url])
+
+
+@pytest.mark.parametrize('args', [
+    ['-h'],
+    ['-V'],
+    ['olvidar'],
+    ['olvidar', '-r', '66217360'],
+    ['ene', '-r', '68912066'],
+])
+def test_main_exitcode_only(mocker, args):
+    """
+    Simulate calling the CLI with various sets of options and assert that the exitcode is 0.
+
+    If a call is found to cause an unexpected error, throw those parameters here, fix the error,
+    and we have a test to assert that it stays fixed.
+    """
+    mocker.patch('sys.argv', ['palabras'] + args)
+    with pytest.raises(SystemExit) as e:
+        # importing __main__ causes the script to be run
+        from palabras import __main__  # noqa: F401
+    assert e.value.code == 0
 
 
 def test_word_info_from_search_return_type(mocked_request_url_text):
@@ -100,14 +239,14 @@ def test_get_wiktionary_page_contains_translation(mocked_request_url_text):
     word = 'culpar'
     translation = 'blame'
     page = palabras.core.WiktionaryPage(word)
-    assert translation in page
+    assert translation in str(page.soup)
 
 
 def test_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text):
     word = 'culpar'
     expected_contains = 'culpou'  # Portuguese 3rd person preterite
     page = palabras.core.WiktionaryPage(word)
-    assert expected_contains in page
+    assert expected_contains in str(page.soup)
 
 
 def test_spanish_entry_type(mocked_request_url_text):
@@ -126,7 +265,7 @@ def test_spanish_entry_does_not_contain_portuguese(mocked_request_url_text):
     word = 'culpar'
     portuguese_conjugation = 'culpou'  # Portuguese 3rd person preterite
     spanish_entry = WiktionaryPage(word).get_spanish_entry()
-    assert portuguese_conjugation not in spanish_entry
+    assert portuguese_conjugation not in str(spanish_entry.soup)
 
 
 # TODO remove?
@@ -283,6 +422,23 @@ def test_cli_no_spanish_entry(capsys: pytest.CaptureFixture, mocked_request_url_
     expected = 'No Spanish entry found from page\n'
     assert captured.out == expected
     assert exitcode == 1
+
+
+def test_main(capsys: pytest.CaptureFixture, mocker):
+    """
+    A little bit more opaque setup to test if we get expected output also by running __main__.py
+    with mocked sys.argv
+    """
+    mocker.patch('sys.argv', ['palabras', 'hola'])  # mock cli arguments
+    with pytest.raises(SystemExit) as e:
+        # importing __main__ causes the script to be run
+        from palabras import __main__  # noqa: F401
+    assert e.value.code == 0  # check exitcode
+    captured = capsys.readouterr()
+    assert captured.out == dedent('''
+        Interjection: ¡hola!
+        - hello, hi
+    ''').lstrip()
 
 
 def test_get_next_siblings_until():
@@ -476,3 +632,32 @@ def test_minimal_section_empty_lead(mocker):
 def test_word_info_to_dict(mocked_request_url_text):
     wi = WordInfo.from_search('olvidar')
     assert wi.to_dict() == EXPECTED_DICT_OLVIDAR
+
+
+def test_no_conjugation_for_noun():
+    wi = WordInfo.from_search('palabra')
+    assert wi.sections_with_definitions[0].conjugation is None
+
+
+def test_verb_conjugation_is_dict():
+    wi = WordInfo.from_search('olvidar')
+    assert isinstance(wi.sections_with_definitions[0].conjugation, dict)
+
+
+@pytest.mark.parametrize('keys, expected', (
+    (['infinitive'], 'olvidar'),
+    (['gerund'], 'olvidando'),
+    (['past participle', 'plural', 'feminine'], 'olvidadas'),
+    (['indicative', 'future', 'pl2'], 'olvidaréis'),
+    (['subjunctive', 'present', 's2'], {'tú': 'olvides', 'vos': 'olvidés'}),  # tuteo/voseo case
+    (['imperative', 'affirmative', 's1'], None),
+))
+def test_verb_conjugation_content(mocked_request_url_text, keys, expected):
+    wi = WordInfo.from_search('olvidar')
+    conjugation = wi.sections_with_definitions[0].conjugation
+
+    # loop through keys and traverse the conjugation dict structure
+    item = conjugation
+    for key in keys:
+        item = item[key]
+    assert item == expected
