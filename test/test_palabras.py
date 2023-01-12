@@ -14,6 +14,123 @@ from palabras.utils import get_siblings_until, get_heading_siblings_on_level
 
 MOCK_CACHE_FILE_PATH = Path(__file__).parent / '../data/mock_cache.json'
 
+EXPECTED_CONJUGATION_OLVIDAR = {
+    'infinitive': 'olvidar',
+    'gerund': 'olvidando',
+    'past participle': {
+        'singular': {
+            'masculine': 'olvidado',
+            'feminine': 'olvidada'
+        },
+        'plural': {
+            'masculine': 'olvidados',
+            'feminine': 'olvidadas'
+        }
+    },
+    'indicative': {
+        'present': {
+            's1': 'olvido',
+            's2': {
+                'tú': 'olvidas',
+                'vos': 'olvidás'
+            },
+            's3': 'olvida',
+            'pl1': 'olvidamos',
+            'pl2': 'olvidáis',
+            'pl3': 'olvidan'
+        },
+        'imperfect': {
+            's1': 'olvidaba',
+            's2': 'olvidabas',
+            's3': 'olvidaba',
+            'pl1': 'olvidábamos',
+            'pl2': 'olvidabais',
+            'pl3': 'olvidaban'
+        },
+        'preterite': {
+            's1': 'olvidé',
+            's2': 'olvidaste',
+            's3': 'olvidó',
+            'pl1': 'olvidamos',
+            'pl2': 'olvidasteis',
+            'pl3': 'olvidaron'
+        },
+        'future': {
+            's1': 'olvidaré',
+            's2': 'olvidarás',
+            's3': 'olvidará',
+            'pl1': 'olvidaremos',
+            'pl2': 'olvidaréis',
+            'pl3': 'olvidarán'
+        },
+        'conditional': {
+            's1': 'olvidaría',
+            's2': 'olvidarías',
+            's3': 'olvidaría',
+            'pl1': 'olvidaríamos',
+            'pl2': 'olvidaríais',
+            'pl3': 'olvidarían'
+        }
+    },
+    'subjunctive': {
+        'present': {
+            's1': 'olvide',
+            's2': {
+                'tú': 'olvides',
+                'vos': 'olvidés'
+            },
+            's3': 'olvide',
+            'pl1': 'olvidemos',
+            'pl2': 'olvidéis',
+            'pl3': 'olviden'
+        },
+        'imperfect(ra)': {
+            's1': 'olvidara',
+            's2': 'olvidaras',
+            's3': 'olvidara',
+            'pl1': 'olvidáramos',
+            'pl2': 'olvidarais',
+            'pl3': 'olvidaran'
+        },
+        'imperfect(se)': {
+            's1': 'olvidase',
+            's2': 'olvidases',
+            's3': 'olvidase',
+            'pl1': 'olvidásemos',
+            'pl2': 'olvidaseis',
+            'pl3': 'olvidasen'
+        },
+        'future1': {
+            's1': 'olvidare',
+            's2': 'olvidares',
+            's3': 'olvidare',
+            'pl1': 'olvidáremos',
+            'pl2': 'olvidareis',
+            'pl3': 'olvidaren'
+        }
+    },
+    'imperative': {
+        'affirmative': {
+            's1': None,
+            's2': {
+                'tú': 'olvida',
+                'vos': 'olvidá'
+            },
+            's3': 'olvide',
+            'pl1': 'olvidemos',
+            'pl2': 'olvidad',
+            'pl3': 'olviden'
+        },
+        'negative': {
+            's1': None,
+            's2': 'no olvides',
+            's3': 'no olvide',
+            'pl1': 'no olvidemos',
+            'pl2': 'no olvidéis',
+            'pl3': 'no olviden'
+        }
+    }
+}
 EXPECTED_DICT_OLVIDAR = dict(
     word='olvidar',
     language='Spanish',
@@ -30,7 +147,8 @@ EXPECTED_DICT_OLVIDAR = dict(
                 dict(text='(transitive) to forget (be forgotten by)'),
                 dict(text='(reflexive, intransitive) to forget, elude, escape'),
                 dict(text='(with de, reflexive, intransitive) to forget, to leave behind')
-            ]
+            ],
+            conjugation=EXPECTED_CONJUGATION_OLVIDAR
         )
     ]
 )

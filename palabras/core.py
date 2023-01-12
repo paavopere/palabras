@@ -392,12 +392,15 @@ class Section(LanguageEntry):
 
     def to_dict(self) -> dict:
         if self.has_definitions():
-            return dict(
+            D = dict(
                 part_of_speech=self.part_of_speech,
                 word=self.word,
                 extras=self.lead_extras,
                 definitions=[d.to_dict() for d in self.definitions]
             )
+            if self.conjugation is not None:
+                D['conjugation'] = self.conjugation
+            return D
         else:
             return dict()
 
