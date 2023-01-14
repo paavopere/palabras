@@ -1,9 +1,10 @@
 import argparse
+import json
 
 import rich.console
 
 from . import __version__
-from .core import WordInfo, WiktionaryPageNotFound, LanguageEntryNotFound
+from .core import LanguageEntry, WordInfo, WiktionaryPageNotFound, LanguageEntryNotFound
 
 
 def main(args):
@@ -35,7 +36,8 @@ def main(args):
 
     try:
         word_info = WordInfo.from_search(args.word, revision=args.revision)
-        output = parse(word_info, compact=args.compact, json=args.json)
+        entry = word_info.entry
+        output = parse(entry, compact=args.compact, use_json=args.json)
         console.print(output, crop=False, overflow='ignore')
         return 0
     except (WiktionaryPageNotFound, LanguageEntryNotFound) as exc:
@@ -43,10 +45,10 @@ def main(args):
         return 1
 
 
-def parse(word_info: WordInfo, compact: bool, json: bool) -> str:
-    if json:
-        return word_info.json_output()
+def parse(entry: LanguageEntry, compact: bool, use_json: bool) -> str:
+    if use_json:
+        return json.dumps(entry.to_dict(), indent=2)
     elif compact:
-        return word_info.compact_definition_output()
+        return entry.compact_definition_output()
     else:
-        return word_info.definition_output()
+        return entry.definition_output()

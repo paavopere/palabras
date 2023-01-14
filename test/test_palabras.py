@@ -251,20 +251,20 @@ def test_wiktionary_page_contains_portuguese_conjugation(mocked_request_url_text
 
 def test_spanish_entry_type(mocked_request_url_text):
     word = 'culpar'
-    result = WiktionaryPage(word).get_spanish_entry()
+    result = WiktionaryPage(word).get_entry('Spanish')
     assert isinstance(result, palabras.core.LanguageEntry)
 
 
 def test_no_spanish_definition(mocked_request_url_text):
     word = 'kauppa'  # a word that has Wiktionary page but no Spanish definition
     with pytest.raises(palabras.core.LanguageEntryNotFound):
-        WiktionaryPage(word).get_spanish_entry()
+        WiktionaryPage(word).get_entry('Spanish')
 
 
 def test_spanish_entry_does_not_contain_portuguese(mocked_request_url_text):
     word = 'culpar'
     portuguese_conjugation = 'culpou'  # Portuguese 3rd person preterite
-    spanish_entry = WiktionaryPage(word).get_spanish_entry()
+    spanish_entry = WiktionaryPage(word).get_entry('Spanish')
     assert portuguese_conjugation not in str(spanish_entry.soup)
 
 
@@ -488,7 +488,7 @@ def test_page_object_attributes(mocked_request_url_text):
 
 def test_sections_len_and_types(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    entry = page.get_spanish_entry()
+    entry = page.get_entry('Spanish')
     sections = entry.sections
     assert len(sections) > 0  # this page has sections
     for s in sections:
@@ -497,7 +497,7 @@ def test_sections_len_and_types(mocked_request_url_text):
 
 def test_section_titles(mocked_request_url_text):
     page = WiktionaryPage('empleado', revision=68396093)
-    entry = page.get_spanish_entry()
+    entry = page.get_entry('Spanish')
     titles = [s.title for s in entry.sections]
     assert titles == [
         'Etymology',
@@ -511,7 +511,7 @@ def test_section_titles(mocked_request_url_text):
 
 def test_get_specific_section(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    entry = page.get_spanish_entry()
+    entry = page.get_entry('Spanish')
     section_adjective = entry.get_section('Adjective')
     assert isinstance(section_adjective, Section)
     assert section_adjective.title == 'Adjective'
@@ -519,7 +519,7 @@ def test_get_specific_section(mocked_request_url_text):
 
 def test_get_nonexistent_section(mocked_request_url_text):
     page = WiktionaryPage('empleado')
-    entry = page.get_spanish_entry()
+    entry = page.get_entry('Spanish')
     with pytest.raises(KeyError, match='No section with title:'):
         entry.get_section('Nonexistent section')
 
@@ -565,7 +565,7 @@ def test_page_repr(mocked_request_url_text):
 def test_entry_repr(mocked_request_url_text):
     page = WiktionaryPage('empleado')
     entry = page.get_entry('Spanish')
-    assert repr(entry) == "<WiktionaryPage('empleado') → 'Spanish'>"
+    assert repr(entry) == "<'empleado' in Spanish>"
 
 
 def test_section_repr(mocked_request_url_text):

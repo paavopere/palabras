@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
-
 import re
+import warnings
 from dataclasses import dataclass
 from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import TypeAlias
@@ -11,7 +11,32 @@ import bs4
 from bs4 import BeautifulSoup, NavigableString
 from bs4.element import PageElement
 
-from .utils import tags_to_soup, render_list, get_heading_siblings_on_level
+from .utils import tags_to_soup, render_list, get_heading_siblings_on_level 
+
+
+class WiktionaryAPI:
+    URL = 'https://en.wiktionary.org/w/api.php'
+
+    def _get(self, **kwargs):
+        params = kwargs
+        params['format'] = 'json'
+        return request_get(url=self.URL, params=kwargs)
+
+    def get_language_section_index(self, word, language):
+        r = self._get(action='parse', page=word, prop=['sections'], format='json')
+        api_sections = r.json()['parse']['sections']
+        section_index = [s for s in api_sections if s['anchor'] == language][0]['index']
+        return section_index
+
+    def get_language_html(self, word, language):
+        section_index = self.get_language_section_index(word, language)
+        r = self._get(
+            action='parse',
+            page=word,
+            prop=['text'],
+            section=section_index,
+        )
+        return r.json()['parse']['text']['*']
 
 
 class WiktionaryPageNotFound(LookupError):
@@ -52,7 +77,7 @@ class WordInfo:
     @property
     def definition_strings(self) -> List[str]:
         """Definitions of the word as a list of strings"""
-        return [d.text for d in self.entry.definitions]
+        return self.entry.definition_strings
 
     @property
     def sections_with_definitions(self) -> List[Section]:
@@ -60,27 +85,10 @@ class WordInfo:
         return self.entry.get_sections_with_definitions()
 
     def definition_output(self) -> str:
-        """
-        Human-readable multiline string with all definitions listed under its corresponding part of
-        speech
-        """
-        outputs = []
-        for section in self.entry.sections:
-            if section.has_definitions():
-                outputs.append(
-                    f'{_render_section_lead(section)}\n'
-                    f'{render_list(d.to_str() for d in section.definitions)}'
-                )
-        return '\n\n'.join(outputs)
+        return self.entry.definition_output()
 
     def compact_definition_output(self) -> str:
-        """
-        Human-readable multiline string with word and all definitions listed
-        one after one another
-        """
-        definitions_with_bullet = [f'- {d.to_str()}' for d in self.entry.definitions]
-        lines = [f'[bold yellow]{self.word}[/]'] + definitions_with_bullet
-        return '\n'.join(lines)
+        return self.entry.compact_definition_output()
 
     def json_output(self) -> str:
         """
@@ -92,11 +100,8 @@ class WordInfo:
         """
         Return a dict of all information related to this WordInfo object.
         """
-        return dict(
-            word=self.word,
-            language=self.LANGUAGE,
-            definition_sections=[d.to_dict() for d in self.sections_with_definitions],
-        )
+        warnings.warn(DeprecationWarning('deprecated function'))
+        return self.entry.to_dict()
 
 
 def _render_section_lead(ss: Section) -> str:
@@ -239,8 +244,9 @@ class WiktionaryPage:
             and self.soup == other.soup
         )
 
-    def get_spanish_entry(self) -> LanguageEntry:
-        return self.get_entry(language='Spanish')
+    # def get_spanish_entry(self) -> LanguageEntry:
+    #     warnings.warn(DeprecationWarning('deprecated function'))
+    #     return self.get_entry(language='Spanish')
 
     def get_entry(self, language: str) -> LanguageEntry:
         """
@@ -257,7 +263,9 @@ class WiktionaryPage:
                 this Wiktionary page.
         """
         return LanguageEntry(
-            soup=_extract_language_entry_soup(self.soup, language=language), page=self
+            soup=_extract_language_entry_soup(self.soup, language=language),
+            page=self,
+            language=language,
         )
 
 
@@ -313,13 +321,15 @@ class LanguageEntry:
 
     # TODO clear up the hierarchy and inheritance between LanguageEntry and Section.
 
-    def __init__(self, soup: BeautifulSoup, page: WiktionaryPage):
+    def __init__(self, soup: BeautifulSoup, page: WiktionaryPage, language: str):
         # self.title = title
         self.page = page
         self.soup = soup
+        self.word = self.page.word
+        self.language = language
 
     def __repr__(self):
-        return f'<{self.page!r} → {self.title!r}>'
+        return f'<{self.word!r} in {self.language}>'
 
     @property
     def title(self) -> str:
@@ -374,6 +384,43 @@ class LanguageEntry:
         for sub in self.get_sections_with_definitions():
             definitions_.extend(sub.definitions)
         return definitions_
+
+    @property
+    def definition_strings(self) -> List[str]:
+        return [d.text for d in self.definitions]
+
+    def definition_output(self) -> str:
+        """
+        Human-readable multiline string with all definitions listed under its corresponding part of
+        speech
+        """
+        outputs = []
+        for section in self.sections:
+            if section.has_definitions():
+                outputs.append(
+                    f'{_render_section_lead(section)}\n'
+                    f'{render_list(d.to_str() for d in section.definitions)}'
+                )
+        return '\n\n'.join(outputs)
+
+    def compact_definition_output(self) -> str:
+        """
+        Human-readable multiline string with word and all definitions listed
+        one after one another
+        """
+        definitions_with_bullet = [f'- {d.to_str()}' for d in self.definitions]
+        lines = [f'[bold yellow]{self.word}[/]'] + definitions_with_bullet
+        return '\n'.join(lines)
+
+    def to_dict(self) -> dict:
+        """
+        Return a dict of all information related to this LanguageEntry.
+        """
+        return dict(
+            word=self.word,
+            language=self.language,
+            definition_sections=[d.to_dict() for d in self.get_sections_with_definitions()],
+        )
 
 
 _EMPTY_TAG = bs4.Tag(name='empty')
@@ -610,5 +657,9 @@ class Definition:
         return dict(text=self.text)
 
 
+def request_get(*args, **kwargs):
+    return requests.get(*args, **kwargs)
+
+
 def request_url_text(url: str) -> str:
-    return requests.get(url).text  # pragma: no cover
+    return request_get(url).text  # pragma: no cover
