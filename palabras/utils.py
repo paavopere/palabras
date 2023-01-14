@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from bs4.element import PageElement
 
 
-def tags_to_soup(tags: Sequence[bs4.Tag], *, features='html.parser') -> BeautifulSoup:
+def tags_to_soup(tags: Sequence[bs4.PageElement], *, features='html.parser') -> BeautifulSoup:
     """
     Given a list of tags, create a new BeautifulSoup object from those tags (copying tags to the
     new soup object in order)

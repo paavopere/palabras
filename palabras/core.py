@@ -3,7 +3,8 @@ import json
 
 import re
 from dataclasses import dataclass
-from typing import Any, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast, Type
+from typing_extensions import TypeAlias
 
 import requests
 import bs4
@@ -11,6 +12,8 @@ from bs4 import BeautifulSoup
 from bs4.element import PageElement
 
 from .utils import tags_to_soup, render_list, get_heading_siblings_on_level
+
+
 
 
 class WiktionaryPageNotFound(LookupError):
@@ -284,11 +287,15 @@ def _entry_start_tag(page_soup: BeautifulSoup, language: str) -> bs4.Tag:
     Find the first `h2` tag in the given BeautifulSoup object representing a Wiktionary page. This
     is used to locate the beginning of the language entry for the word being searched.
     """
-    id_tag: bs4.Tag = page_soup.find(id=language)
+    id_tag = page_soup.find(id=language)
     if id_tag is None:
         raise LanguageEntryNotFound(f'No {language} entry found from page')
+    assert isinstance(id_tag, bs4.Tag)
+
     start_tag = id_tag.parent
+    assert isinstance(start_tag, bs4.Tag)
     assert start_tag.name == 'h2'
+
     return start_tag
 
 
@@ -318,7 +325,9 @@ class LanguageEntry:
 
     @property
     def title(self) -> str:
-        return self.soup.find(class_='mw-headline').text
+        title_tag = self.soup.find(class_='mw-headline')
+        assert isinstance(title_tag, bs4.Tag)
+        return title_tag.text
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -370,8 +379,11 @@ class LanguageEntry:
 
 
 _EMPTY_TAG = bs4.Tag(name='empty')
-ConjugationTableDiv = Type[bs4.Tag]
+
+
 Conjugation = dict
+ConjugationTableDiv: TypeAlias = bs4.Tag
+
 
 
 class Section(LanguageEntry):
@@ -408,7 +420,7 @@ class Section(LanguageEntry):
 
     @property
     def _word_tag(self) -> bs4.Tag:
-        return self._lead_p.find(class_='headword') or _EMPTY_TAG
+        return cast(bs4.Tag, self._lead_p.find(class_='headword')) or _EMPTY_TAG
 
     @property
     def _lead_p(self) -> bs4.Tag:
@@ -499,7 +511,7 @@ class Section(LanguageEntry):
         """
         res = []
         for e in li.children:
-            if e.name not in ('dl', 'ul'):  # exclude nested stuff
+            if isinstance(e, bs4.Tag) and e.name not in ('dl', 'ul'):  # exclude nested stuff
                 res.append(e.get_text())
         return ''.join(res).strip()
 
@@ -513,12 +525,18 @@ class ConjugationTable:
     _ROW_SLICE_SUBJUNCTIVE = slice(15, 19)
     _ROW_SLICE_IMPERATIVE = slice(21, 23)
 
+    root: ConjugationTableDiv
+    table: bs4.Tag
+
     def __init__(self, root: ConjugationTableDiv):
         """
         Initialize from a "root" tag, a div that contains the conjugation table
         """
         self.root = root
-        self.table = self.root.find('table')
+        table = self.root.find('table')
+        if not isinstance(table, bs4.Tag):
+            raise ValueError("No 'table' tag found")
+        self.table = table
 
     def to_dict(self):
         return {
@@ -542,19 +560,19 @@ class ConjugationTable:
         }
 
     def _parse_simple(self, row_index: int):
-        tag = self.table.tbody.find_all('tr')[row_index].td
+        tag = cast(bs4.Tag, self.table.tbody).find_all('tr')[row_index].td
         return tag.get_text().strip()
 
     def _parse_complex(self, row_slice: slice, header: Sequence[str]):
         d = {}
-        for tr in self.table.tbody.find_all('tr')[row_slice]:
+        for tr in cast(bs4.Tag, self.table.tbody).find_all('tr')[row_slice]:
             row_key, values_dict = self._parse_row(tr, header)
             d[row_key] = values_dict
         return d
 
     @staticmethod
     def _parse_row(tr: bs4.Tag, header: Sequence[str]) -> Tuple[str, dict]:
-        row_key = tr.th.get_text().strip()
+        row_key = cast(bs4.Tag, tr.th).get_text().strip()
         value_tags = [td for td in tr.find_all('td')]
         values = [ConjugationTable._parse_value_tag(td) for td in value_tags]
         values_dict = {h: v for h, v in zip(header, values)}
