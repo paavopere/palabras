@@ -3,17 +3,15 @@ import json
 
 import re
 from dataclasses import dataclass
-from typing import Any, List, Optional, Sequence, Tuple, Union, cast, Type
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 from typing_extensions import TypeAlias
 
 import requests
 import bs4
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 from bs4.element import PageElement
 
 from .utils import tags_to_soup, render_list, get_heading_siblings_on_level
-
-
 
 
 class WiktionaryPageNotFound(LookupError):
@@ -385,7 +383,6 @@ Conjugation = dict
 ConjugationTableDiv: TypeAlias = bs4.Tag
 
 
-
 class Section(LanguageEntry):
     def __init__(self, parent: LanguageEntry, soup: BeautifulSoup):
         self.parent = parent
@@ -511,7 +508,8 @@ class Section(LanguageEntry):
         """
         res = []
         for e in li.children:
-            if isinstance(e, bs4.Tag) and e.name not in ('dl', 'ul'):  # exclude nested stuff
+            assert isinstance(e, bs4.Tag) or isinstance(e, NavigableString)
+            if e.name not in ('dl', 'ul'):  # exclude nested stuff
                 res.append(e.get_text())
         return ''.join(res).strip()
 
@@ -534,8 +532,7 @@ class ConjugationTable:
         """
         self.root = root
         table = self.root.find('table')
-        if not isinstance(table, bs4.Tag):
-            raise ValueError("No 'table' tag found")
+        assert isinstance(table, bs4.Tag)
         self.table = table
 
     def to_dict(self):
