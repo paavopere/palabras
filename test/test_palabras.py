@@ -1,9 +1,11 @@
+# type: ignore
+
 import json
 from pathlib import Path
 from textwrap import dedent
 
 import pytest
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from pytest_mock import MockerFixture
 
 import palabras.core
@@ -455,6 +457,7 @@ def test_get_next_siblings_until():
     )
     soup = BeautifulSoup(markup, features='html.parser')
     tag = soup.find('h1')
+    assert isinstance(tag, Tag)
     assert len(get_siblings_until(tag, 'p')) == 1  # hello
     assert len(get_siblings_until(tag, 'h2')) == 2  # hello ... hello again
     assert len(get_siblings_until(tag, 'h1')) == 4  # hello ... hello 2
@@ -658,6 +661,7 @@ def test_verb_conjugation_content(mocked_request_url_text, keys, expected):
 
     # loop through keys and traverse the conjugation dict structure
     item = conjugation
+    assert isinstance(item, dict)
     for key in keys:
         item = item[key]
     assert item == expected

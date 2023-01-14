@@ -11,7 +11,7 @@ import bs4
 from bs4 import BeautifulSoup, NavigableString
 from bs4.element import PageElement
 
-from .utils import tags_to_soup, render_list, get_heading_siblings_on_level 
+from .utils import tags_to_soup, render_list, get_heading_siblings_on_level
 
 
 class WiktionaryAPI:
@@ -319,8 +319,6 @@ class LanguageEntry:
     True
     """
 
-    # TODO clear up the hierarchy and inheritance between LanguageEntry and Section.
-
     def __init__(self, soup: BeautifulSoup, page: WiktionaryPage, language: str):
         # self.title = title
         self.page = page
@@ -430,7 +428,7 @@ Conjugation = dict
 ConjugationTableDiv: TypeAlias = bs4.Tag
 
 
-class Section(LanguageEntry):
+class Section:
     def __init__(self, parent: LanguageEntry, soup: BeautifulSoup):
         self.parent = parent
         if not isinstance(parent, LanguageEntry) or isinstance(parent, Section):
@@ -439,6 +437,12 @@ class Section(LanguageEntry):
 
     def __repr__(self):
         return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
+
+    @property
+    def title(self) -> str:
+        title_tag = self.soup.find(class_='mw-headline')
+        assert isinstance(title_tag, bs4.Tag)
+        return title_tag.text
 
     def to_dict(self) -> dict[str, Any]:
         if self.has_definitions():
