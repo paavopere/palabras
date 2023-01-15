@@ -10,7 +10,7 @@ from pytest_mock import MockerFixture
 
 import palabras.core
 import palabras.cli
-from palabras.core import Section, WiktionaryPage, WordInfo
+from palabras.core import Section, WiktionaryPage, find_entry, LanguageEntry
 from palabras.utils import get_siblings_until, get_heading_siblings_on_level
 
 
@@ -188,20 +188,6 @@ def test_main_exitcode_only(mocker, args):
     assert e.value.code == 0
 
 
-def test_word_info_from_search_return_type(mocked_request_url_text):
-    word = 'despacito'
-    wi = WordInfo.from_search(word)
-    assert isinstance(wi, palabras.core.WordInfo)
-
-
-def test_word_info_equals_but_not_is(mocked_request_url_text):
-    word = 'despacito'
-    wi1 = WordInfo.from_search(word)
-    wi2 = WordInfo.from_search(word)
-    assert wi1 == wi2
-    assert wi1 is not wi2
-
-
 def test_page_equalities(mocked_request_url_text):
     word = 'olvidar'
     wp_1 = WiktionaryPage(word=word)
@@ -225,10 +211,12 @@ def test_eqs_with_other_types(mocked_request_url_text):
     word = 'olvidar'
     page = WiktionaryPage(word)
     entry = page.get_entry('Spanish')
-    wi = WordInfo(entry)
     assert page != 'foo'
     assert entry != 'foo'
-    assert wi != 'foo'
+
+def test_entry_equalities():
+    assert LanguageEntry('foo', 'bar', 'baz') == LanguageEntry('foo', 'bar', 'baz')
+    assert LanguageEntry('something', 'else', '') != LanguageEntry('foo', 'bar', 'baz')
 
 
 def test_get_wiktionary_page_nonexistent(mocked_request_url_text):
@@ -279,17 +267,14 @@ def test_definition_list_item_to_str(mocked_request_url_text):
     assert str_definition == 'parse this'
 
 
-def test_lookup_definition(mocked_request_url_text):
-    word = 'culpar'
-    wi = WordInfo.from_search(word)
-    assert wi.definition_strings[0] == 'to blame'
+def test_search_definition(mocked_request_url_text):
+    entry = find_entry('culpar', 'Spanish')
+    assert entry.definition_strings[0] == 'to blame'
 
 
 def test_lookup_definition_complicated(mocked_request_url_text):
-    word = 'empleado'  # this word has definitions for adjective, noun, and verb
-    revision = 62175311
-    wi = WordInfo.from_search(word, revision=revision)
-    assert wi.definition_strings == [
+    entry = find_entry('empleado', 'Spanish', 62175311)
+    assert entry.definition_strings == [
         'employed',
         'employee',
         'Masculine singular past participle of emplear.'
@@ -298,6 +283,7 @@ def test_lookup_definition_complicated(mocked_request_url_text):
 
 def test_lookup_different_definitions_in_history(mocked_request_url_text):
     word = 'olvidar'
+    language = 'Spanish'
     revision_1 = 62345284
     revision_2 = 66217360
     expected_definitions_1 = [
@@ -311,9 +297,9 @@ def test_lookup_different_definitions_in_history(mocked_request_url_text):
         '(with de, reflexive, intransitive) to forget, to leave behind'
     ]
 
-    assert WordInfo.from_search(word, revision=revision_1).definition_strings \
+    assert find_entry(word, language, revision_1).definition_strings \
         == expected_definitions_1
-    assert WordInfo.from_search(word, revision=revision_2).definition_strings \
+    assert find_entry(word, language, revision_2).definition_strings \
         == expected_definitions_2
 
 
@@ -575,7 +561,7 @@ def test_section_repr(mocked_request_url_text):
     page = WiktionaryPage('ser')
     entry = page.get_entry('Spanish')
     entry = entry.get_section('Verb')
-    assert repr(entry) == "<WiktionaryPage('ser') → 'Spanish' → 'Verb'>"
+    assert repr(entry) == "<'ser' in Spanish → Verb>"
 
 
 def test_section_raises_on_invalid_parent():
@@ -632,19 +618,19 @@ def test_minimal_section_empty_lead(mocker):
     assert section.to_dict() == {}
 
 
-def test_word_info_to_dict(mocked_request_url_text):
-    wi = WordInfo.from_search('olvidar')
-    assert wi.to_dict() == EXPECTED_DICT_OLVIDAR
+def test_entry_to_dict(mocked_request_url_text):
+    entry = WiktionaryPage('olvidar').get_entry('Spanish')
+    assert entry.to_dict() == EXPECTED_DICT_OLVIDAR
 
 
 def test_no_conjugation_for_noun():
-    wi = WordInfo.from_search('palabra')
-    assert wi.sections_with_definitions[0].conjugation is None
+    entry = WiktionaryPage('palabra').get_entry('Spanish')
+    assert entry.get_sections_with_definitions()[0].conjugation is None
 
 
 def test_verb_conjugation_is_dict():
-    wi = WordInfo.from_search('olvidar')
-    assert isinstance(wi.sections_with_definitions[0].conjugation, dict)
+    entry = WiktionaryPage('olvidar').get_entry('Spanish')
+    assert isinstance(entry.get_sections_with_definitions()[0].conjugation, dict)
 
 
 @pytest.mark.parametrize('keys, expected', (
@@ -656,8 +642,8 @@ def test_verb_conjugation_is_dict():
     (['imperative', 'affirmative', 's1'], None),
 ))
 def test_verb_conjugation_content(mocked_request_url_text, keys, expected):
-    wi = WordInfo.from_search('olvidar')
-    conjugation = wi.sections_with_definitions[0].conjugation
+    entry = WiktionaryPage('olvidar').get_entry('Spanish')
+    conjugation = entry.get_sections_with_definitions()[0].conjugation
 
     # loop through keys and traverse the conjugation dict structure
     item = conjugation

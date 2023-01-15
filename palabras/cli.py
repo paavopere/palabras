@@ -4,7 +4,7 @@ import json
 import rich.console
 
 from . import __version__
-from .core import LanguageEntry, WordInfo, WiktionaryPageNotFound, LanguageEntryNotFound
+from .core import LanguageEntry, WiktionaryPageNotFound, LanguageEntryNotFound, find_entry
 
 
 def main(args):
@@ -35,8 +35,7 @@ def main(args):
     console = rich.console.Console()
 
     try:
-        word_info = WordInfo.from_search(args.word, revision=args.revision)
-        entry = word_info.entry
+        entry = find_entry(word=args.word, language='Spanish', revision=args.revision)
         output = parse(entry, compact=args.compact, use_json=args.json)
         console.print(output, crop=False, overflow='ignore')
         return 0

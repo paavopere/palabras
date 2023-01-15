@@ -47,61 +47,8 @@ class LanguageEntryNotFound(LookupError):
     pass
 
 
-@dataclass
-class WordInfo:
-    """
-    Information about a word, including its language, part of speech, and definitions.
-    """
-
-    LANGUAGE = 'Spanish'
-    entry: LanguageEntry
-
-    @classmethod
-    def from_search(cls, word: str, *, revision: Optional[int] = None):
-        """
-        Fetch information about a word from Wiktionary and return a WordInfo object.
-
-        Parameters:
-            word (str): The word to search for.
-            revision (Optional[int]): The revision number of the Wiktionary page to use. If not
-                provided, the latest revision will be used.
-        """
-        entry = WiktionaryPage(word, revision).get_entry(cls.LANGUAGE)
-        return cls(entry=entry)
-
-    @property
-    def word(self) -> str:
-        """The word represented by this WordInfo object, as a string"""
-        return self.entry.page.word
-
-    @property
-    def definition_strings(self) -> List[str]:
-        """Definitions of the word as a list of strings"""
-        return self.entry.definition_strings
-
-    @property
-    def sections_with_definitions(self) -> List[Section]:
-        """List of Section objects that contain definitions"""
-        return self.entry.get_sections_with_definitions()
-
-    def definition_output(self) -> str:
-        return self.entry.definition_output()
-
-    def compact_definition_output(self) -> str:
-        return self.entry.compact_definition_output()
-
-    def json_output(self) -> str:
-        """
-        Return a JSON string representation of all information related to this WordInfo object.
-        """
-        return json.dumps(self.to_dict(), indent=2)
-
-    def to_dict(self) -> dict:
-        """
-        Return a dict of all information related to this WordInfo object.
-        """
-        warnings.warn(DeprecationWarning('deprecated function'))
-        return self.entry.to_dict()
+def find_entry(word: str, language: str, revision: Optional[int] = None):
+    return WiktionaryPage(word, revision).get_entry(language)
 
 
 def _render_section_lead(ss: Section) -> str:
@@ -244,10 +191,6 @@ class WiktionaryPage:
             and self.soup == other.soup
         )
 
-    # def get_spanish_entry(self) -> LanguageEntry:
-    #     warnings.warn(DeprecationWarning('deprecated function'))
-    #     return self.get_entry(language='Spanish')
-
     def get_entry(self, language: str) -> LanguageEntry:
         """
         Retrieve the language entry for the given language on this Wiktionary page.
@@ -263,9 +206,9 @@ class WiktionaryPage:
                 this Wiktionary page.
         """
         return LanguageEntry(
-            soup=_extract_language_entry_soup(self.soup, language=language),
-            page=self,
+            word=self.word,
             language=language,
+            soup=_extract_language_entry_soup(self.soup, language=language),
         )
 
 
@@ -319,26 +262,18 @@ class LanguageEntry:
     True
     """
 
-    def __init__(self, soup: BeautifulSoup, page: WiktionaryPage, language: str):
-        # self.title = title
-        self.page = page
-        self.soup = soup
-        self.word = self.page.word
+    def __init__(self, word: str, language: str, soup: BeautifulSoup):
+        self.word = word
         self.language = language
+        self.soup = soup
 
     def __repr__(self):
         return f'<{self.word!r} in {self.language}>'
 
-    @property
-    def title(self) -> str:
-        title_tag = self.soup.find(class_='mw-headline')
-        assert isinstance(title_tag, bs4.Tag)
-        return title_tag.text
-
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self.page == other.page and self.soup == other.soup
+        return self.word == other.word and self.language == other.language and self.soup == other.soup
 
     @property
     def sections(self) -> List[Section]:
@@ -417,7 +352,9 @@ class LanguageEntry:
         return dict(
             word=self.word,
             language=self.language,
-            definition_sections=[d.to_dict() for d in self.get_sections_with_definitions()],
+            definition_sections=[
+                d.to_dict() for d in self.get_sections_with_definitions()
+            ],
         )
 
 
@@ -436,7 +373,7 @@ class Section:
         self.soup = soup
 
     def __repr__(self):
-        return f'<{self.parent.page} → {self.parent.title!r} → {self.title!r}>'
+        return f'<{self.parent.word!r} in {self.parent.language} → {self.title}>'
 
     @property
     def title(self) -> str:
