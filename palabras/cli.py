@@ -4,7 +4,7 @@ import json
 import rich.console
 
 from . import __version__
-from .core import LanguageEntry, WiktionaryPageNotFound, LanguageEntryNotFound, find_entry
+from .core import LanguageEntry, RichCLIRenderer, WiktionaryPageNotFound, LanguageEntryNotFound, find_entry
 
 
 def main(args):
@@ -29,6 +29,11 @@ def main(args):
         action='store_true',
         help='List definitions for all parts of speech together',
     )
+    parser.add_argument(
+        '--experimental',
+        action='store_true',
+        help='Use experimental features (may be unstable)',
+    )
     parser.add_argument('--json', action='store_true', help='Output as JSON')
     args = parser.parse_args(args)
 
@@ -36,7 +41,12 @@ def main(args):
 
     try:
         entry = find_entry(word=args.word, language='Spanish', revision=args.revision)
-        output = parse(entry, compact=args.compact, use_json=args.json)
+        output = parse(
+            entry,
+            compact=args.compact,
+            use_json=args.json,
+            experimental=args.experimental
+        )
         console.print(output, crop=False, overflow='ignore')
         return 0
     except (WiktionaryPageNotFound, LanguageEntryNotFound) as exc:
@@ -44,10 +54,12 @@ def main(args):
         return 1
 
 
-def parse(entry: LanguageEntry, compact: bool, use_json: bool) -> str:
+def parse(entry: LanguageEntry, compact: bool, use_json: bool, experimental: bool) -> str:
     if use_json:
         return json.dumps(entry.to_dict(), indent=2)
     elif compact:
         return entry.compact_definition_output()
     else:
+        if experimental:
+            return RichCLIRenderer().render(entry.to_dict())
         return entry.definition_output()

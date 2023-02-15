@@ -271,7 +271,11 @@ class LanguageEntry:
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self.word == other.word and self.language == other.language and self.soup == other.soup
+        return (
+            self.word == other.word
+            and self.language == other.language
+            and self.soup == other.soup
+        )
 
     @property
     def sections(self) -> List[Section]:
@@ -387,6 +391,8 @@ class Section:
                 extras=self.lead_extras,
                 definitions=[d.to_dict() for d in self.definitions],
             )
+            if self.gender is not None:
+                D['gender'] = self.gender
             if self.conjugation is not None:
                 D['conjugation'] = self.conjugation
             return D
@@ -581,6 +587,38 @@ class ConjugationTable:
             }
         else:
             return None
+
+
+class RichCLIRenderer:
+
+    @staticmethod
+    def render(entry_dict: dict) -> str:
+        rendered_sections = [RichCLIRenderer.render_section(s)
+                             for s in entry_dict['definition_sections']]
+        return '\n\n'.join(rendered_sections)
+
+    @staticmethod
+    def render_section(section_dict: dict) -> str:
+        d = section_dict
+        parts = []
+        parts.append(f"[italic]{d['part_of_speech']}:[/]")
+        parts.append(f"[bold yellow]{d['word']}[/]")
+        if d.get('gender'):
+            parts.append(d['gender'])
+        if d.get('extras'):
+            parts.append(RichCLIRenderer.render_section_extras(d['extras']))
+        lead = ' '.join(parts)
+
+        definition_list = render_list([defn['text'] for defn in d['definitions']])
+        return f"{lead}\n{definition_list}"
+
+    @staticmethod
+    def render_section_extras(extras: dict) -> str:
+        extra_strings = []
+        for e in extras:
+            if 'value' in e:
+                extra_strings.append(f"[italic]{e['attribute']}[/] [yellow]{e['value']}[/]")
+        return f"({', '.join(extra_strings)})"
 
 
 @dataclass
