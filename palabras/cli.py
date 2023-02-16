@@ -63,5 +63,5 @@ def parse(entry: LanguageEntry, compact: bool, use_json: bool, experimental: boo
         return RichCLIRenderer().render_compact(entry.to_dict())
     else:
         if experimental:
-            return entry.compact_definition_output()
+            return "nothing experimental at the moment"  # pragma: no cover
         return RichCLIRenderer().render(entry.to_dict())

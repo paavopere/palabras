@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 from dataclasses import dataclass
-from typing import Any, List, Optional, Sequence, Tuple, Union, cast
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast, Iterable
 from typing_extensions import TypeAlias
 
 import requests
@@ -9,10 +9,10 @@ import bs4
 from bs4 import BeautifulSoup, NavigableString
 from bs4.element import PageElement
 
-from .utils import tags_to_soup, render_list, get_heading_siblings_on_level
+from .utils import tags_to_soup, get_heading_siblings_on_level
 
 
-class WiktionaryAPI:
+class WiktionaryAPI:  # pragma: no cover -- yet unused
     URL = 'https://en.wiktionary.org/w/api.php'
 
     def _get(self, **kwargs):
@@ -258,15 +258,6 @@ class LanguageEntry:
     @property
     def definition_strings(self) -> List[str]:
         return [d.text for d in self.definitions]
-
-    def compact_definition_output(self) -> str:
-        """
-        Human-readable multiline string with word and all definitions listed
-        one after one another
-        """
-        definitions_with_bullet = [f'- {d.to_str()}' for d in self.definitions]
-        lines = [f'[bold yellow]{self.word}[/]'] + definitions_with_bullet
-        return '\n'.join(lines)
 
     def to_dict(self) -> dict:
         """
@@ -523,7 +514,7 @@ class RichCLIRenderer:
         output = f"[bold yellow]{d['word']}[/]"
         for s in d['definition_sections']:
             output += '\n'
-            output += render_list([defn['text'] for defn in s['definitions']])
+            output += cls.render_list([defn['text'] for defn in s['definitions']])
         return output
 
     @classmethod
@@ -537,7 +528,7 @@ class RichCLIRenderer:
             parts.append(cls._render_section_extras(d['extras']))
         lead = ' '.join(parts)
 
-        definition_list = render_list([defn['text'] for defn in d['definitions']])
+        definition_list = cls.render_list([defn['text'] for defn in d['definitions']])
         return f"{lead}\n{definition_list}"
 
     @classmethod
@@ -548,15 +539,28 @@ class RichCLIRenderer:
                 extra_strings.append(f"[italic]{e['attribute']}[/] [yellow]{e['value']}[/]")
         return f"({', '.join(extra_strings)})"
 
+    @staticmethod
+    def render_list(strlist: Iterable[str], sep='\n', prefix='- ') -> str:
+        """
+        Take a list like ['foo', 'bar'] and render it by default as a multiline string:
+
+        >>> print(RichCLIRenderer.render_list(['foo', 'bar']))
+        - foo
+        - bar
+
+        You can customize the separator and prefix:
+
+        >>> RichCLIRenderer.render_list(['world', 'again'], sep='||', prefix='hello')
+        'helloworld||helloagain'
+        """
+        return sep.join(f'{prefix}{s}' for s in strlist)
+
 
 @dataclass
 class Definition:
     text: str
     extras: Optional[dict]  # we would put synonyms, antonyms, usage examples, etc. here
     section: Section
-
-    def to_str(self) -> str:
-        return self.text
 
     def to_dict(self) -> dict:
         return dict(text=self.text)

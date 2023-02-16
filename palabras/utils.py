@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Container, List, Union, Sequence, Iterable
+from typing import Container, List, Union, Sequence, cast
 import bs4
 from bs4 import BeautifulSoup
 from bs4.element import PageElement
@@ -43,7 +43,7 @@ def get_siblings_until(
     break_names = [until] if isinstance(until, str) else until
     found = [element]
     for sibling in element.next_siblings:
-        if sibling.name in break_names:
+        if cast(bs4.Tag, sibling).name in break_names:
             break
         else:
             found.append(sibling)
@@ -58,19 +58,3 @@ def standardize_spaces(s: str) -> str:
     'This    has some nbsps'
     """
     return s.replace('\u00a0', ' ')
-
-
-def render_list(strlist: Iterable[str], sep='\n', prefix='- ') -> str:
-    """
-    Take a list like ['foo', 'bar'] and render it as a multiline string like:
-    - foo
-    - bar
-
-    >>> print(render_list(['foo', 'bar']))
-    - foo
-    - bar
-
-    >>> render_list(['world', 'again'], sep='||', prefix='hello')
-    'helloworld||helloagain'
-    """
-    return sep.join(f'{prefix}{s}' for s in strlist)
