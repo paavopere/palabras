@@ -502,12 +502,12 @@ class ConjugationTable:
 
 
 class RichCLIRenderer:
-
     @classmethod
-    def render(cls, entry_dict: dict) -> str:
-        rendered_sections = [cls.render_section(s)
-                             for s in entry_dict['definition_sections']]
-        return '\n\n'.join(rendered_sections)
+    def render(cls, entry_dict: dict) -> list:
+        rendered_sections = [
+            cls.render_section(s) for s in entry_dict['definition_sections']
+        ]
+        return [item for sublist in rendered_sections for item in sublist]
 
     @classmethod
     def render_compact(cls, d: dict) -> str:
@@ -518,26 +518,57 @@ class RichCLIRenderer:
         return output
 
     @classmethod
-    def render_section(cls, d: dict) -> str:
-        parts = []
-        parts.append(f"[italic]{d['part_of_speech']}:[/]")
-        parts.append(f"[bold yellow]{d['word']}[/]")
+    def render_section(cls, d: dict) -> list:
+        output_parts = []
+
+        lead_parts = []
+        lead_parts.append(f"[italic]{d['part_of_speech']}:[/]")
+        lead_parts.append(f"[bold yellow]{d['word']}[/]")
         if d.get('gender'):
-            parts.append(d['gender'])
+            lead_parts.append(d['gender'])
         if d.get('extras'):
-            parts.append(cls._render_section_extras(d['extras']))
-        lead = ' '.join(parts)
+            lead_parts.append(cls._render_section_extras(d['extras']))
+        lead = ' '.join(lead_parts)
+        output_parts.append(lead)
 
         definition_list = cls.render_list([defn['text'] for defn in d['definitions']])
-        return f"{lead}\n{definition_list}"
+        output_parts.append(f"{definition_list}")
+
+        if d.get('conjugation'):
+            output_parts.append(cls.render_conjugation(d['conjugation']))
+
+        return output_parts
 
     @classmethod
     def _render_section_extras(cls, extras: dict) -> str:
         extra_strings = []
         for e in extras:
             if 'value' in e:
-                extra_strings.append(f"[italic]{e['attribute']}[/] [yellow]{e['value']}[/]")
+                extra_strings.append(
+                    f"[italic]{e['attribute']}[/] [yellow]{e['value']}[/]"
+                )
         return f"({', '.join(extra_strings)})"
+
+    @classmethod
+    def render_conjugation(cls, d: dict) -> str:
+        from rich.table import Table
+        table = Table(title='indicative')
+        
+        table.add_column('')
+        for k in d['indicative']['present'].keys():
+            table.add_column(k)
+
+        def convert(form):
+            if isinstance(form, str):
+                return form
+            elif isinstance(form, dict):
+                return '\n'.join(f"{pronoun} {verbform}" for pronoun, verbform in form.items())
+
+        for tense in d['indicative']:
+            values = [convert(v) for v in d['indicative'][tense].values()]
+            table.add_row(tense, *values)
+
+        return table
 
     @staticmethod
     def render_list(strlist: Iterable[str], sep='\n', prefix='- ') -> str:

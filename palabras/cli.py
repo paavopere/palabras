@@ -1,11 +1,16 @@
 import argparse
 import json
+from typing import Union
 
 import rich.console
 
 from . import __version__
 from .core import (
-    LanguageEntry, RichCLIRenderer, WiktionaryPageNotFound, LanguageEntryNotFound, find_entry
+    LanguageEntry,
+    RichCLIRenderer,
+    WiktionaryPageNotFound,
+    LanguageEntryNotFound,
+    find_entry,
 )
 
 
@@ -43,25 +48,29 @@ def main(args):
 
     try:
         entry = find_entry(word=args.word, language='Spanish', revision=args.revision)
-        output = parse(
+        parsed = parse(
             entry,
             compact=args.compact,
             use_json=args.json,
-            experimental=args.experimental
+            experimental=args.experimental,
         )
-        console.print(output, crop=False, overflow='ignore')
+        if isinstance(parsed, str):
+            parsed = [parsed]
+        console.print(*parsed, crop=False, overflow='ignore', sep='\n')
         return 0
     except (WiktionaryPageNotFound, LanguageEntryNotFound) as exc:
         print(exc)
         return 1
 
 
-def parse(entry: LanguageEntry, compact: bool, use_json: bool, experimental: bool) -> str:
+def parse(
+    entry: LanguageEntry, compact: bool, use_json: bool, experimental: bool
+) -> Union[str, list]:
     if use_json:
         return json.dumps(entry.to_dict(), indent=2)
     elif compact:
         return RichCLIRenderer().render_compact(entry.to_dict())
+    elif experimental:
+        return "nothing experimental at the moment"  # pragma: no cover
     else:
-        if experimental:
-            return "nothing experimental at the moment"  # pragma: no cover
         return RichCLIRenderer().render(entry.to_dict())
