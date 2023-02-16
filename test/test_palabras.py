@@ -214,6 +214,7 @@ def test_eqs_with_other_types(mocked_request_url_text):
     assert page != 'foo'
     assert entry != 'foo'
 
+
 def test_entry_equalities():
     assert LanguageEntry('foo', 'bar', 'baz') == LanguageEntry('foo', 'bar', 'baz')
     assert LanguageEntry('something', 'else', '') != LanguageEntry('foo', 'bar', 'baz')
