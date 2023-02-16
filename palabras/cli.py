@@ -4,7 +4,9 @@ import json
 import rich.console
 
 from . import __version__
-from .core import LanguageEntry, RichCLIRenderer, WiktionaryPageNotFound, LanguageEntryNotFound, find_entry
+from .core import (
+    LanguageEntry, RichCLIRenderer, WiktionaryPageNotFound, LanguageEntryNotFound, find_entry
+)
 
 
 def main(args):
@@ -58,8 +60,8 @@ def parse(entry: LanguageEntry, compact: bool, use_json: bool, experimental: boo
     if use_json:
         return json.dumps(entry.to_dict(), indent=2)
     elif compact:
-        return entry.compact_definition_output()
+        return RichCLIRenderer().render_compact(entry.to_dict())
     else:
         if experimental:
-            return RichCLIRenderer().render(entry.to_dict())
-        return entry.definition_output()
+            return entry.compact_definition_output()
+        return RichCLIRenderer().render(entry.to_dict())

@@ -49,71 +49,6 @@ def find_entry(word: str, language: str, revision: Optional[int] = None):
     return WiktionaryPage(word, revision).get_entry(language)
 
 
-def _render_section_lead(ss: Section) -> str:
-    """
-    Render the lead for a section in a string format, including formatting tags for the `rich`
-    package used to print to command line.
-
-    The lead for a section consists of the part of speech, the word, the gender (if applicable),
-    and any lead extras.
-
-    Parameters:
-        ss (Section): The Section object to render the lead for.
-
-    Returns:
-        str: The rendered lead for the given section.
-
-    Example:
-        >>> section = WiktionaryPage('olvidar').get_entry('Spanish').get_section('Verb')
-        >>> _render_section_lead(section)
-        '[italic]Verb:[/] [bold yellow]olvidar[/] ([italic]first-person singular present[/] \
-[yellow]olvido[/], [italic]first-person singular preterite[/] [yellow]olvidé[/], \
-[italic]past participle[/] [yellow]olvidado[/])'
-    """
-    parts = [f'[italic]{ss.part_of_speech}:[/]', f'[bold yellow]{ss.word}[/]']
-    if ss.gender:
-        parts.append(ss.gender)
-    if ss.lead_extras:
-        lead_extra_strings = _render_section_lead_extras(ss.lead_extras)
-        parts.append(f"({', '.join(lead_extra_strings)})")
-    return ' '.join(parts)
-
-
-def _render_section_lead_extras(lead_extras: List[dict]) -> List[str]:
-    """
-    Render the lead extras for a section in a string format, including formatting tags for the
-    `rich` package used to print to command line.
-
-    Lead extras are attributes that are listed after the part of speech and word in the lead for
-    a section.
-
-    Parameters:
-        lead_extras (List[dict]): A list of dictionaries representing the lead extras for a section.
-
-    Returns:
-        List[str]: The rendered lead extras for the given section.
-
-    Example:
-        >>> _render_section_lead_extras([
-        ...     dict(attribute='first-person singular present', value='olvido'),
-        ...     dict(attribute='first-person singular preterite', value='olvidé'),
-        ...     dict(attribute='past participle', value='olvidado'),
-        ... ])
-        ['[italic]first-person singular present[/] [yellow]olvido[/]', \
-'[italic]first-person singular preterite[/] [yellow]olvidé[/]', \
-'[italic]past participle[/] [yellow]olvidado[/]']
-    """
-    lead_extra_strings = []
-    for le in lead_extras:
-        if 'value' in le:
-            lead_extra_strings.append(
-                f'[italic]{le["attribute"]}[/] [yellow]{le["value"]}[/]'
-            )
-        else:
-            lead_extra_strings.append(f'[italic]{le["attribute"]}[/]')
-    return lead_extra_strings
-
-
 class WiktionaryPage:
     """
     Represents a page on Wiktionary, with the page content parsed into a BeautifulSoup object in
@@ -323,20 +258,6 @@ class LanguageEntry:
     @property
     def definition_strings(self) -> List[str]:
         return [d.text for d in self.definitions]
-
-    def definition_output(self) -> str:
-        """
-        Human-readable multiline string with all definitions listed under its corresponding part of
-        speech
-        """
-        outputs = []
-        for section in self.sections:
-            if section.has_definitions():
-                outputs.append(
-                    f'{_render_section_lead(section)}\n'
-                    f'{render_list(d.to_str() for d in section.definitions)}'
-                )
-        return '\n\n'.join(outputs)
 
     def compact_definition_output(self) -> str:
         """
@@ -591,29 +512,36 @@ class ConjugationTable:
 
 class RichCLIRenderer:
 
-    @staticmethod
-    def render(entry_dict: dict) -> str:
-        rendered_sections = [RichCLIRenderer.render_section(s)
+    @classmethod
+    def render(cls, entry_dict: dict) -> str:
+        rendered_sections = [cls.render_section(s)
                              for s in entry_dict['definition_sections']]
         return '\n\n'.join(rendered_sections)
 
-    @staticmethod
-    def render_section(section_dict: dict) -> str:
-        d = section_dict
+    @classmethod
+    def render_compact(cls, d: dict) -> str:
+        output = f"[bold yellow]{d['word']}[/]"
+        for s in d['definition_sections']:
+            output += '\n'
+            output += render_list([defn['text'] for defn in s['definitions']])
+        return output
+
+    @classmethod
+    def render_section(cls, d: dict) -> str:
         parts = []
         parts.append(f"[italic]{d['part_of_speech']}:[/]")
         parts.append(f"[bold yellow]{d['word']}[/]")
         if d.get('gender'):
             parts.append(d['gender'])
         if d.get('extras'):
-            parts.append(RichCLIRenderer.render_section_extras(d['extras']))
+            parts.append(cls._render_section_extras(d['extras']))
         lead = ' '.join(parts)
 
         definition_list = render_list([defn['text'] for defn in d['definitions']])
         return f"{lead}\n{definition_list}"
 
-    @staticmethod
-    def render_section_extras(extras: dict) -> str:
+    @classmethod
+    def _render_section_extras(cls, extras: dict) -> str:
         extra_strings = []
         for e in extras:
             if 'value' in e:
