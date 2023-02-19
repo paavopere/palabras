@@ -1,4 +1,5 @@
 from __future__ import annotations
+import itertools
 import re
 from dataclasses import dataclass
 from typing import Any, List, Optional, Sequence, Tuple, Union, cast, Iterable
@@ -8,6 +9,7 @@ import requests
 import bs4
 from bs4 import BeautifulSoup, NavigableString
 from bs4.element import PageElement
+from rich.table import Table
 
 from .utils import tags_to_soup, get_heading_siblings_on_level
 
@@ -502,23 +504,31 @@ class ConjugationTable:
 
 
 class RichCLIRenderer:
-    @classmethod
-    def render(cls, entry_dict: dict) -> list:
-        rendered_sections = [
-            cls.render_section(s) for s in entry_dict['definition_sections']
-        ]
-        return [item for sublist in rendered_sections for item in sublist]
 
-    @classmethod
-    def render_compact(cls, d: dict) -> str:
-        output = f"[bold yellow]{d['word']}[/]"
-        for s in d['definition_sections']:
+    def __init__(self, options: dict):
+        self.options = options
+
+    def render(self, data) -> list:
+        if self.options.get('compact'):
+            return [self._render_compact(data)]
+        else:
+            rendered_sections = [
+                self.render_section(s) + ['']  # add a blank line between sections
+                for s in data['definition_sections']
+            ]
+            chained_list = list(itertools.chain(*rendered_sections))
+            return chained_list[:-1]  # remove the last blank line
+
+    def _render_compact(self, data) -> str:
+        output = f"[bold yellow]{data['word']}[/]"
+        for s in data['definition_sections']:
             output += '\n'
-            output += cls.render_list([defn['text'] for defn in s['definitions']])
+            output += self.render_list([defn['text'] for defn in s['definitions']])
         return output
 
-    @classmethod
-    def render_section(cls, d: dict) -> list:
+    def render_section(self, section_data: dict) -> list:
+        d = section_data
+
         output_parts = []
 
         lead_parts = []
@@ -527,15 +537,15 @@ class RichCLIRenderer:
         if d.get('gender'):
             lead_parts.append(d['gender'])
         if d.get('extras'):
-            lead_parts.append(cls._render_section_extras(d['extras']))
+            lead_parts.append(self._render_section_extras(d['extras']))
         lead = ' '.join(lead_parts)
         output_parts.append(lead)
 
-        definition_list = cls.render_list([defn['text'] for defn in d['definitions']])
+        definition_list = self.render_list([defn['text'] for defn in d['definitions']])
         output_parts.append(f"{definition_list}")
 
-        if d.get('conjugation'):
-            output_parts.append(cls.render_conjugation(d['conjugation']))
+        if self.options.get('conjugation') and d.get('conjugation'):
+            output_parts.append(self.render_conjugation(d['conjugation']))
 
         return output_parts
 
@@ -550,10 +560,9 @@ class RichCLIRenderer:
         return f"({', '.join(extra_strings)})"
 
     @classmethod
-    def render_conjugation(cls, d: dict) -> str:
-        from rich.table import Table
+    def render_conjugation(cls, d: dict) -> Table:
         table = Table(title='indicative')
-        
+
         table.add_column('')
         for k in d['indicative']['present'].keys():
             table.add_column(k)

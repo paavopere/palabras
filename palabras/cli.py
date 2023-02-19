@@ -25,6 +25,12 @@ def main(args):
         '-V', '--version', action='version', version=f'%(prog)s {__version__}'
     )
     parser.add_argument(
+        '--language', '-l',
+        type=str,
+        help='Language to look up',
+        default='Spanish',
+    )
+    parser.add_argument(
         '-r',
         '--revision',
         type=int,
@@ -36,41 +42,73 @@ def main(args):
         action='store_true',
         help='List definitions for all parts of speech together',
     )
+
     parser.add_argument(
-        '--experimental',
+        '-e', '--etymology',
         action='store_true',
-        help='Use experimental features (may be unstable)',
+        help='Show etymology',
     )
-    parser.add_argument('--json', action='store_true', help='Output as JSON')
-    args = parser.parse_args(args)
+    parser.add_argument(
+        '-p', '--pronunciation',
+        action='store_true',
+        help='Show pronunciation',
+    )
+    parser.add_argument(
+        '-c', '--conjugation',
+        action='store_true',
+        help='Show conjugation',
+    )
+    parser.add_argument(
+        '-x', '--examples',
+        action='store_true',
+        help='Show examples',
+    )
+
+    parser.add_argument(
+        '-j', '--json',
+        action='store_true',
+        dest='output_json',
+        help='Output as JSON',
+    )
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='Show debug information',
+    )
+
+    arg_dict = vars(parser.parse_args(args))
+    lookup_options = {
+        k: v
+        for k, v in arg_dict.items()
+        if k in ('word', 'language', 'revision')}
+    render_options = {
+        k: v
+        for k, v in arg_dict.items()
+        if k in ('compact', 'etymology', 'pronunciation', 'conjugation', 'examples', 'output_json')}
 
     console = rich.console.Console()
+    if arg_dict['debug']:
+        console.print(arg_dict)
 
     try:
-        entry = find_entry(word=args.word, language='Spanish', revision=args.revision)
-        parsed = parse(
-            entry,
-            compact=args.compact,
-            use_json=args.json,
-            experimental=args.experimental,
-        )
-        if isinstance(parsed, str):
-            parsed = [parsed]
-        console.print(*parsed, crop=False, overflow='ignore', sep='\n')
+        entry = find_entry(**lookup_options)
+        output = render(entry, **render_options)
+        if isinstance(output, str):
+            output = [output]
+        console.print(*output, crop=False, overflow='ignore', sep='\n')
         return 0
     except (WiktionaryPageNotFound, LanguageEntryNotFound) as exc:
         print(exc)
         return 1
 
 
-def parse(
-    entry: LanguageEntry, compact: bool, use_json: bool, experimental: bool
+def render(
+    entry: LanguageEntry,
+    output_json: bool,
+    **options
 ) -> Union[str, list]:
-    if use_json:
-        return json.dumps(entry.to_dict(), indent=2)
-    elif compact:
-        return RichCLIRenderer().render_compact(entry.to_dict())
-    elif experimental:
-        return "nothing experimental at the moment"  # pragma: no cover
+    data = entry.to_dict()
+    if output_json:
+        return json.dumps(data, indent=2)
     else:
-        return RichCLIRenderer().render(entry.to_dict())
+        return RichCLIRenderer(options).render(data)
