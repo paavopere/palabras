@@ -531,6 +531,19 @@ class RichCLIRenderer:
 
         output_parts = []
 
+        lead = self._render_section_lead(section_data)
+        output_parts.append(lead)
+
+        definition_list = self.render_list([defn['text'] for defn in d['definitions']])
+        output_parts.append(definition_list)
+
+        if self.options.get('conjugation') and d.get('conjugation'):
+            output_parts.extend(self.render_conjugation(d['conjugation']))
+
+        return output_parts
+
+    def _render_section_lead(self, section_data: dict) -> str:
+        d = section_data
         lead_parts = []
         lead_parts.append(f"[italic]{d['part_of_speech']}:[/]")
         lead_parts.append(f"[bold yellow]{d['word']}[/]")
@@ -538,19 +551,9 @@ class RichCLIRenderer:
             lead_parts.append(d['gender'])
         if d.get('extras'):
             lead_parts.append(self._render_section_extras(d['extras']))
-        lead = ' '.join(lead_parts)
-        output_parts.append(lead)
+        return ' '.join(lead_parts)
 
-        definition_list = self.render_list([defn['text'] for defn in d['definitions']])
-        output_parts.append(f"{definition_list}")
-
-        if self.options.get('conjugation') and d.get('conjugation'):
-            output_parts.append(self.render_conjugation(d['conjugation']))
-
-        return output_parts
-
-    @classmethod
-    def _render_section_extras(cls, extras: dict) -> str:
+    def _render_section_extras(self, extras: dict) -> str:
         extra_strings = []
         for e in extras:
             if 'value' in e:
@@ -559,25 +562,30 @@ class RichCLIRenderer:
                 )
         return f"({', '.join(extra_strings)})"
 
-    @classmethod
-    def render_conjugation(cls, d: dict) -> Table:
-        table = Table(title='indicative')
-
-        table.add_column('')
-        for k in d['indicative']['present'].keys():
-            table.add_column(k)
-
+    def render_conjugation(self, d: dict) -> list[Table]:
         def convert(form):
             if isinstance(form, str):
                 return form
             elif isinstance(form, dict):
                 return '\n'.join(f"{pronoun} {verbform}" for pronoun, verbform in form.items())
-
-        for tense in d['indicative']:
-            values = [convert(v) for v in d['indicative'][tense].values()]
-            table.add_row(tense, *values)
-
-        return table
+            elif form is None:
+                return ''
+        tables = []
+        for k, v in d.items():
+            table = Table(title=k)
+            if isinstance(v, str):
+                table.show_header = False
+                table.add_column('')
+                table.add_row(v)
+            elif isinstance(v, dict):
+                table.add_column('', style='bold')
+                for header_field in list(v.values())[0].keys():  # get header values from first row
+                    table.add_column(header_field)
+                for tense, forms in v.items():
+                    form_strings = [convert(form) for form in forms.values()]
+                    table.add_row(tense, *form_strings)
+            tables.append(table)
+        return tables
 
     @staticmethod
     def render_list(strlist: Iterable[str], sep='\n', prefix='- ') -> str:
