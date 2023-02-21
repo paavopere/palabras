@@ -88,7 +88,7 @@ def main(args):
 
     console = rich.console.Console()
     if arg_dict['debug']:
-        console.print(arg_dict)
+        console.print(arg_dict)  # pragma: no cover
 
     try:
         entry = find_entry(**lookup_options)

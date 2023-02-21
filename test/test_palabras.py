@@ -652,3 +652,19 @@ def test_verb_conjugation_content(mocked_request_url_text, keys, expected):
     for key in keys:
         item = item[key]
     assert item == expected
+
+
+def test_cli_verb_conjugation_content(mocked_request_url_text, capsys):
+    palabras.cli.main(['olvidar', '-l', 'Spanish', '-c'])
+    captured = capsys.readouterr()
+    expected_content_words = ['indicative', 'subjunctive', 'imperative',
+                              'olvido', 'olviden', 'no olvides']
+    for word in expected_content_words:
+        assert word in captured.out
+
+
+def test_cli_no_conjugation_without_flag(mocked_request_url_text, capsys):
+    palabras.cli.main(['olvidar', '-l', 'Spanish'])
+    captured = capsys.readouterr()
+    # we're assuming that the word indicative is only present in the conjugation section
+    assert 'indicative' not in captured.out
