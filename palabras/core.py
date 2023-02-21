@@ -505,10 +505,13 @@ class ConjugationTable:
 
 class RichCLIRenderer:
 
+    _RenderedConjugation = List[Table]
+    _RenderedPart = Union[str, _RenderedConjugation]
+
     def __init__(self, options: dict):
         self.options = options
 
-    def render(self, data) -> list:
+    def render(self, data) -> list[_RenderedPart]:
         if self.options.get('compact'):
             return [self._render_compact(data)]
         else:
@@ -526,10 +529,10 @@ class RichCLIRenderer:
             output += self.render_list([defn['text'] for defn in s['definitions']])
         return output
 
-    def render_section(self, section_data: dict) -> list:
+    def render_section(self, section_data: dict) -> list[Union[str, _RenderedConjugation]]:
         d = section_data
 
-        output_parts = []
+        output_parts: list[Any] = []
 
         lead = self._render_section_lead(section_data)
         output_parts.append(lead)
@@ -562,7 +565,7 @@ class RichCLIRenderer:
                 )
         return f"({', '.join(extra_strings)})"
 
-    def render_conjugation(self, d: dict) -> list[Table]:
+    def render_conjugation(self, d: dict) -> _RenderedConjugation:
         def convert(form):
             if isinstance(form, str):
                 return form
