@@ -106,3 +106,37 @@ resource "aws_iam_role_policy_attachment" "palabras" {
   policy_arn = aws_iam_policy.palabras.arn
   role = aws_iam_role.palabras.name
 }
+
+# lambda function
+data "archive_file" "python_lambda_package" {
+  type        = "zip"
+  source_dir  = "${path.module}/.."
+  excludes    = [".git",
+                 ".github",
+                 ".mypy_cache",
+                 ".pytest_cache",
+                 ".tox",
+                 "data",
+                 "deploy",
+                 "test",
+                 ".coverage",
+                 ".flake8",
+                 ".DS_Store"]
+  output_path = "${path.module}/palabras.zip"
+}
+
+resource "aws_lambda_function" "palabras" {
+  filename         = data.archive_file.python_lambda_package.output_path
+  function_name    = "palabras"
+  role             = aws_iam_role.palabras.arn
+  handler          = "palabras.lambda.lambda_handler"
+  source_code_hash = data.archive_file.python_lambda_package.output_base64sha256
+  runtime          = "python3.10"
+  timeout          = 60
+  memory_size      = 128
+
+  vpc_config {
+    subnet_ids         = [aws_subnet.palabras.id]
+    security_group_ids = [aws_security_group.palabras.id]
+  }
+}

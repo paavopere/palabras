@@ -132,3 +132,5 @@ dmypy.json
 _adhoc/
 
 .vscode/
+.DS_Store
+palabras.zip
