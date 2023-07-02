@@ -1,3 +1,13 @@
+# Try it out
+
+Try the deployed instance out with (replace `ser` with any Spanish word found on Wiktionary):
+
+```
+curl https://c9rf83tgc3.execute-api.eu-north-1.amazonaws.com/palabras/ser
+```
+
+The output is formatted for display in a true-color terminal. In other cases (e.g. navigating to the URL in a browser), you'll see character jumble from the color escape sequences.
+
 # Deployment on AWS
 
 Instructions for macOS, conda, homebrew
@@ -33,6 +43,6 @@ terraform plan
 Deploy infrastructure and function code (when you're in `deploy`, `..` points to project root):
 
 ```
-pip install --target ./package boto3 ..
+pip install --target ./package ..
 terraform apply
 ```
