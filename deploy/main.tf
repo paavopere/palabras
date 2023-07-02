@@ -111,19 +111,8 @@ resource "aws_iam_role_policy_attachment" "palabras" {
 
 data "archive_file" "python_lambda_package" {
   type        = "zip"
-  source_dir  = "${path.module}/.."
-  excludes    = [".git",
-                 ".github",
-                 ".mypy_cache",
-                 ".pytest_cache",
-                 ".tox",
-                 "data",
-                 "deploy",
-                 "test",
-                 ".coverage",
-                 ".flake8",
-                 ".DS_Store"]
-  output_path = "${path.module}/palabras.zip"
+  source_dir  = "${path.module}/package"
+  output_path = "${path.module}/package.zip"
 }
 
 resource "aws_lambda_function" "palabras" {

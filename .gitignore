@@ -133,4 +133,5 @@ _adhoc/
 
 .vscode/
 .DS_Store
-palabras.zip
+package/
+package.zip

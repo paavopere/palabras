@@ -30,8 +30,9 @@ terraform init -backend-config=backend.hcl
 terraform plan
 ```
 
-Deploy infrastructure:
+Deploy infrastructure and function code (when you're in `deploy`, `..` points to project root):
 
 ```
+pip install --target ./package boto3 ..
 terraform apply
 ```
