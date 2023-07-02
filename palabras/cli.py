@@ -6,7 +6,7 @@ from . import __version__
 from .core import WordInfo, WiktionaryPageNotFound, LanguageEntryNotFound
 
 
-def main(args):
+def main(args, console_color_system='auto'):
     parser = argparse.ArgumentParser(
         prog='palabras',
         description='Look up a word',
@@ -31,7 +31,7 @@ def main(args):
     parser.add_argument('--json', action='store_true', help='Output as JSON')
     args = parser.parse_args(args)
 
-    console = rich.console.Console()
+    console = rich.console.Console(color_system=console_color_system)
 
     try:
         word_info = WordInfo.from_search(args.word, revision=args.revision)

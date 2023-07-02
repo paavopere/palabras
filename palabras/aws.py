@@ -12,7 +12,7 @@ def lambda_handler(event, context):
     word = event['pathParameters']['word']
 
     with StringIO() as buf, redirect_stdout(buf):
-        cli.main([word])
+        cli.main([word], console_color_system='truecolor')
         output = buf.getvalue()
 
     return {
