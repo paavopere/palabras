@@ -72,7 +72,7 @@ resource "aws_lambda_function" "palabras" {
   filename         = data.archive_file.python_lambda_package.output_path
   function_name    = "palabras"
   role             = aws_iam_role.palabras.arn
-  handler          = "palabras.lambda.lambda_handler"
+  handler          = "palabras.aws.lambda_handler"
   source_code_hash = data.archive_file.python_lambda_package.output_base64sha256
   runtime          = "python3.10"
   timeout          = 60
@@ -90,6 +90,7 @@ resource "aws_apigatewayv2_stage" "palabras" {
   api_id = aws_apigatewayv2_api.palabras.id
   name = "palabras"
   auto_deploy = true
+  depends_on = [aws_apigatewayv2_route.palabras]
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gw.arn
@@ -108,12 +109,12 @@ resource "aws_apigatewayv2_stage" "palabras" {
     })
   }
 
-  # route_settings {
-  #   route_key = "GET /"
-  #   logging_level = "INFO"
-  #   throttling_burst_limit = 1
-  #   throttling_rate_limit = 1
-  # }
+  route_settings {
+    route_key = "GET /{word}"
+    logging_level = "INFO"
+    throttling_burst_limit = 1
+    throttling_rate_limit = 1
+  }
 }
 
 # integrate api gateway with lambda function
