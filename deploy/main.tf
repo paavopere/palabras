@@ -14,53 +14,6 @@ provider "aws" {
   region = "eu-north-1"
 }
 
-# vpc
-
-resource "aws_vpc" "palabras" {
-  cidr_block = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support = true
-
-  tags = {
-    Name = "palabras-vpc"
-  }
-}
-
-# subnet
-
-resource "aws_subnet" "palabras" {
-  vpc_id = aws_vpc.palabras.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "eu-north-1a"
-
-  tags = {
-    Name = "palabras-subnet"
-  }
-}
-
-# security group
-
-resource "aws_security_group" "palabras" {
-  name = "palabras-sg"
-  description = "Allow inbound traffic"
-
-  vpc_id = aws_vpc.palabras.id
-
-  ingress {
-    from_port = 0
-    to_port = 65535
-    protocol = "tcp"
-    cidr_blocks = ["10.0.1.0/24"]
-  }
-
-  egress {
-    from_port = 0
-    to_port = 65535
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
 # iam role and policy
 
 resource "aws_iam_role" "palabras" {
@@ -124,11 +77,6 @@ resource "aws_lambda_function" "palabras" {
   runtime          = "python3.10"
   timeout          = 60
   memory_size      = 128
-
-  vpc_config {
-    subnet_ids         = [aws_subnet.palabras.id]
-    security_group_ids = [aws_security_group.palabras.id]
-  }
 }
 
 # api gateway
@@ -160,14 +108,15 @@ resource "aws_apigatewayv2_stage" "palabras" {
     })
   }
 
-  route_settings {
-    route_key = "GET /"
-    logging_level = "INFO"
-    throttling_burst_limit = 1
-    throttling_rate_limit = 1
-  }
+  # route_settings {
+  #   route_key = "GET /"
+  #   logging_level = "INFO"
+  #   throttling_burst_limit = 1
+  #   throttling_rate_limit = 1
+  # }
 }
 
+# integrate api gateway with lambda function
 resource "aws_apigatewayv2_integration" "palabras" {
   api_id = aws_apigatewayv2_api.palabras.id
 
@@ -176,19 +125,22 @@ resource "aws_apigatewayv2_integration" "palabras" {
   integration_method = "POST"
 }
 
+# map route to integration
 resource "aws_apigatewayv2_route" "palabras" {
   api_id = aws_apigatewayv2_api.palabras.id
 
-  route_key = "GET /"
+  route_key = "GET /{word}"
   target    = "integrations/${aws_apigatewayv2_integration.palabras.id}"
 }
 
+# log api gateway
 resource "aws_cloudwatch_log_group" "api_gw" {
   name = "/aws/api_gw/${aws_apigatewayv2_api.palabras.name}"
 
   retention_in_days = 30
 }
 
+# allow api gateway to invoke lambda function
 resource "aws_lambda_permission" "api_gw" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
@@ -198,7 +150,7 @@ resource "aws_lambda_permission" "api_gw" {
   source_arn = "${aws_apigatewayv2_api.palabras.execution_arn}/*/*"
 }
 
-
+# outputs
 output "function_name" {
   description = "Name of the Lambda function."
   value = aws_lambda_function.palabras.function_name
